@@ -6,7 +6,7 @@ import mediaRoutes from './routes/mediaRoutes';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
-
+ 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
