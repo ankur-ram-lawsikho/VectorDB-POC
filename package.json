@@ -1,0 +1,40 @@
+{
+  "name": "vectordb-media-library",
+  "version": "1.0.0",
+  "description": "Media library with vector search using pgvector",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate",
+    "migration:run": "typeorm-ts-node-commonjs migration:run",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert",
+    "backfill:embeddings": "ts-node src/scripts/backfillEmbeddings.ts"
+  },
+  "keywords": ["vector", "pgvector", "media-library", "search"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "multer": "^1.4.5-lts.1",
+    "@google/generative-ai": "^0.2.1",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "@types/multer": "^1.4.11",
+    "@types/cors": "^2.8.17",
+    "@types/uuid": "^9.0.7",
+    "ts-node-dev": "^2.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "typeorm": "^0.3.17"
+  }
+}
+
