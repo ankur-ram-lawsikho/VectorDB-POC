@@ -18,17 +18,14 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Get media item by ID
-router.get('/:id', async (req: Request, res: Response) => {
+// Get statistics about embeddings
+router.get('/stats/embeddings', async (req: Request, res: Response) => {
   try {
-    const mediaItem = await mediaService.getMediaById(req.params.id);
-    if (!mediaItem) {
-      return res.status(404).json({ error: 'Media item not found' });
-    }
-    res.json(mediaItem);
+    const stats = await mediaService.getEmbeddingStats();
+    res.json(stats);
   } catch (error) {
-    console.error('Error fetching media:', error);
-    res.status(500).json({ error: 'Failed to fetch media item' });
+    console.error('Error fetching embedding stats:', error);
+    res.status(500).json({ error: 'Failed to fetch embedding statistics' });
   }
 });
 
@@ -140,20 +137,85 @@ router.post('/image', upload.single('image'), async (req: Request, res: Response
   }
 });
 
-// Search media items
+// Search media items by text query
 router.post('/search', async (req: Request, res: Response) => {
   try {
-    const { query, limit } = req.body;
+    const { query, limit, maxDistance, metric } = req.body;
 
     if (!query) {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    const results = await mediaService.searchMedia(query, limit || 10);
-    res.json(results);
+    console.log(`Search request: query="${query}", limit=${limit || 10}, maxDistance=${maxDistance || 'default'}, metric=${metric || 'cosine'}`);
+
+    const results = await mediaService.searchMedia(
+      query,
+      limit || 10,
+      maxDistance,
+      metric || 'cosine'
+    );
+    
+    res.json({
+      query,
+      count: results.length,
+      results: results.map(r => ({
+        ...r.item,
+        similarity: r.similarity,
+        distance: r.distance,
+      })),
+    });
   } catch (error) {
     console.error('Error searching media:', error);
-    res.status(500).json({ error: 'Failed to search media items' });
+    if (error instanceof Error) {
+      res.status(500).json({ error: 'Failed to search media items', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to search media items' });
+    }
+  }
+});
+
+// Find similar media items to a given media item (must be before /:id route)
+router.get('/:id/similar', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const maxDistance = req.query.maxDistance ? parseFloat(req.query.maxDistance as string) : undefined;
+    const metric = (req.query.metric as 'cosine' | 'l2' | 'inner_product') || 'cosine';
+
+    const results = await mediaService.findSimilarMedia(id, limit, maxDistance, metric);
+    
+    res.json({
+      sourceId: id,
+      count: results.length,
+      results: results.map(r => ({
+        ...r.item,
+        similarity: r.similarity,
+        distance: r.distance,
+      })),
+    });
+  } catch (error) {
+    console.error('Error finding similar media:', error);
+    if (error instanceof Error && error.message === 'Media item not found') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error instanceof Error && error.message.includes('embedding')) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to find similar media items' });
+  }
+});
+
+// Get media item by ID
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const mediaItem = await mediaService.getMediaById(req.params.id);
+    if (!mediaItem) {
+      return res.status(404).json({ error: 'Media item not found' });
+    }
+    res.json(mediaItem);
+  } catch (error) {
+    console.error('Error fetching media:', error);
+    res.status(500).json({ error: 'Failed to fetch media item' });
   }
 });
 

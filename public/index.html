@@ -150,6 +150,102 @@
             flex: 1;
         }
 
+        .search-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .similarity-options {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            display: none;
+        }
+
+        .similarity-options.active {
+            display: block;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .option-group input[type="number"],
+        .option-group input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
         .media-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -356,9 +452,76 @@
             <!-- Search Tab -->
             <div id="search-tab" class="tab-content">
                 <div class="search-section">
-                    <div class="search-input-group">
-                        <input type="text" id="search-query" placeholder="Enter search term...">
-                        <button onclick="searchMedia()">Search</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="search-input-group" style="flex: 1; margin-right: 10px;">
+                            <input type="text" id="search-query" placeholder="Enter search term..." onkeypress="if(event.key==='Enter') searchMedia()">
+                            <button onclick="searchMedia()">Search</button>
+                        </div>
+                        <button onclick="checkEmbeddingStats()" style="background: #2196F3; padding: 12px 20px; font-size: 14px;">
+                            Check Embeddings
+                        </button>
+                    </div>
+                    <div id="embedding-stats" style="display: none; padding: 10px; background: #e3f2fd; border-radius: 4px; margin-bottom: 10px; font-size: 14px;"></div>
+                    
+                    <!-- Similarity Search Toggle -->
+                    <div class="search-mode-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="similarity-toggle" checked onchange="toggleSimilaritySearch()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <div>
+                            <strong style="color: #333;">Similarity Search</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 2px;">
+                                AI-powered semantic search using vector embeddings
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Similarity Search Options -->
+                    <div id="similarity-options" class="similarity-options active">
+                        <div class="option-group">
+                            <label>Distance Metric</label>
+                            <div style="display: flex; gap: 15px; margin-top: 8px;">
+                                <label style="font-size: 14px; font-weight: normal; cursor: pointer;">
+                                    <input type="radio" name="metric" value="cosine" checked style="width: auto; margin-right: 5px;">
+                                    Cosine (Recommended)
+                                </label>
+                                <label style="font-size: 14px; font-weight: normal; cursor: pointer;">
+                                    <input type="radio" name="metric" value="l2" style="width: auto; margin-right: 5px;">
+                                    L2 (Euclidean)
+                                </label>
+                                <label style="font-size: 14px; font-weight: normal; cursor: pointer;">
+                                    <input type="radio" name="metric" value="inner_product" style="width: auto; margin-right: 5px;">
+                                    Inner Product
+                                </label>
+                            </div>
+                            <div id="inner-product-note" style="display: none; font-size: 12px; color: #666; margin-top: 5px; padding: 8px; background: #fff3cd; border-radius: 4px;">
+                                ⚠️ Inner Product works differently: lower values = more similar. Recommended threshold: 0.0 to 0.5.
+                            </div>
+                            </div>
+                        </div>
+
+                        <div class="option-group">
+                            <label>
+                                Max Distance Threshold
+                                <span id="max-distance-value" class="range-value">1.0</span>
+                            </label>
+                            <input type="range" id="max-distance" min="0.1" max="2.0" step="0.1" value="1.0" 
+                                   oninput="document.getElementById('max-distance-value').textContent = this.value; updateMetricNote();">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 4px;">
+                                <span>Strict (0.1)</span>
+                                <span>Moderate (0.5)</span>
+                                <span>Permissive (2.0)</span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                💡 Tip: Increase threshold if getting 0 results
+                            </div>
+                        </div>
+
+                        <div class="option-group">
+                            <label>Max Results</label>
+                            <input type="number" id="search-limit" min="1" max="50" value="20" style="max-width: 100px;">
+                        </div>
                     </div>
                 </div>
                 <div id="search-results" class="media-grid"></div>
@@ -388,7 +551,17 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Find the tab button and activate it
+                const tabs = document.querySelectorAll('.tab');
+                tabs.forEach(t => {
+                    if (t.textContent.toLowerCase().includes(tab)) {
+                        t.classList.add('active');
+                    }
+                });
+            }
             document.getElementById(`${tab}-tab`).classList.add('active');
             
             if (tab === 'browse') {
@@ -500,6 +673,41 @@
             }
         }
 
+        function toggleSimilaritySearch() {
+            const toggle = document.getElementById('similarity-toggle');
+            const options = document.getElementById('similarity-options');
+            
+            if (toggle.checked) {
+                options.classList.add('active');
+            } else {
+                options.classList.remove('active');
+            }
+        }
+
+        function updateDistanceThreshold(value) {
+            document.getElementById('max-distance-value').textContent = value;
+            updateMetricNote();
+        }
+
+        function updateMetricNote() {
+            const metric = document.querySelector('input[name="metric"]:checked')?.value;
+            const note = document.getElementById('inner-product-note');
+            if (metric === 'inner_product') {
+                note.style.display = 'block';
+            } else {
+                note.style.display = 'none';
+            }
+        }
+
+        // Update note when metric changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const metricInputs = document.querySelectorAll('input[name="metric"]');
+            metricInputs.forEach(input => {
+                input.addEventListener('change', updateMetricNote);
+            });
+            updateMetricNote();
+        });
+
         async function searchMedia() {
             const query = document.getElementById('search-query').value;
             if (!query) {
@@ -507,17 +715,116 @@
                 return;
             }
 
+            const useSimilarity = document.getElementById('similarity-toggle').checked;
+            const container = document.getElementById('search-results');
+
+            if (!useSimilarity) {
+                // Simple text-based search (keyword matching)
+                try {
+                    const response = await fetch(`${API_BASE}`);
+                    const allItems = await response.json();
+                    
+                    const searchLower = query.toLowerCase();
+                    const filtered = allItems.filter(item => {
+                        const title = (item.title || '').toLowerCase();
+                        const content = (item.content || '').toLowerCase();
+                        const description = (item.description || '').toLowerCase();
+                        return title.includes(searchLower) || 
+                               content.includes(searchLower) || 
+                               description.includes(searchLower);
+                    });
+
+                    if (filtered.length === 0) {
+                        container.innerHTML = '<p>No items found matching your search.</p>';
+                        showMessage('No results found', 'error');
+                    } else {
+                        displayMedia(filtered, 'search-results', false);
+                        showMessage(`Found ${filtered.length} result(s) using keyword search`, 'success');
+                    }
+                } catch (error) {
+                    showMessage('Error: ' + error.message, 'error');
+                }
+                return;
+            }
+
+            // Similarity search
+            const metric = document.querySelector('input[name="metric"]:checked')?.value || 'cosine';
+            const maxDistance = parseFloat(document.getElementById('max-distance').value);
+            const limit = parseInt(document.getElementById('search-limit').value) || 20;
+
             try {
                 const response = await fetch(`${API_BASE}/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, limit: 20 })
+                    body: JSON.stringify({ 
+                        query, 
+                        limit, 
+                        metric,
+                        maxDistance 
+                    })
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    displayMedia(data, 'search-results');
+                    // New API returns {query, count, results}
+                    const items = data.results || data;
+                    displayMedia(items, 'search-results', true);
+                    if (data.count !== undefined) {
+                        if (data.count === 0) {
+                            showMessage(`No results found. Try: 1) Increase max distance threshold, 2) Check if items have embeddings, 3) Verify items exist in database`, 'error');
+                            // Auto-check embedding stats if no results
+                            checkEmbeddingStats();
+                        } else {
+                            showMessage(`Found ${data.count} result(s) using ${metric} similarity search`, 'success');
+                        }
+                    }
                 } else {
                     showMessage(data.error || 'Search failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function checkEmbeddingStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats/embeddings`);
+                const stats = await response.json();
+                const statsDiv = document.getElementById('embedding-stats');
+                
+                if (response.ok) {
+                    statsDiv.style.display = 'block';
+                    statsDiv.innerHTML = `
+                        <strong>Embedding Statistics:</strong><br>
+                        Total Items: ${stats.totalItems} | 
+                        With Embeddings: ${stats.itemsWithEmbeddings} (${stats.percentageWithEmbeddings}%) | 
+                        Without Embeddings: ${stats.itemsWithoutEmbeddings}
+                        ${stats.itemsWithoutEmbeddings > 0 ? '<br><span style="color: #f44336;">⚠️ Some items don\'t have embeddings. Run backfill script or recreate items.</span>' : ''}
+                    `;
+                } else {
+                    showMessage('Failed to fetch embedding stats', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function findSimilarMedia(id) {
+            try {
+                const response = await fetch(`${API_BASE}/${id}/similar?limit=10&metric=cosine`);
+                const data = await response.json();
+                if (response.ok) {
+                    const items = data.results || [];
+                    if (items.length === 0) {
+                        showMessage('No similar items found', 'error');
+                        return;
+                    }
+                    // Switch to search tab and display results
+                    switchTab('search');
+                    document.getElementById('search-query').value = `Similar to: ${data.sourceId}`;
+                    displayMedia(items, 'search-results', true);
+                    showMessage(`Found ${data.count} similar item(s)`, 'success');
+                } else {
+                    showMessage(data.error || 'Failed to find similar items', 'error');
                 }
             } catch (error) {
                 showMessage('Error: ' + error.message, 'error');
@@ -538,24 +845,37 @@
             }
         }
 
-        function displayMedia(items, containerId) {
+        function displayMedia(items, containerId, showSimilarity = false) {
             const container = document.getElementById(containerId);
             if (items.length === 0) {
                 container.innerHTML = '<p>No media items found.</p>';
                 return;
             }
 
-            container.innerHTML = items.map(item => `
+            container.innerHTML = items.map(item => {
+                const similarityBadge = showSimilarity && item.similarity !== undefined 
+                    ? `<div style="margin: 10px 0; padding: 8px; background: #e3f2fd; border-radius: 4px;">
+                         <strong>Similarity:</strong> ${(item.similarity * 100).toFixed(1)}% 
+                         ${item.distance !== undefined ? `(Distance: ${item.distance.toFixed(3)})` : ''}
+                       </div>`
+                    : '';
+                
+                return `
                 <div class="media-card">
                     <span class="media-type ${item.type}">${item.type.toUpperCase()}</span>
                     <h3>${item.title}</h3>
+                    ${similarityBadge}
                     ${item.description ? `<div class="media-description">${item.description}</div>` : ''}
                     ${item.content ? `<div class="media-content">${item.content.substring(0, 200)}${item.content.length > 200 ? '...' : ''}</div>` : ''}
                     ${item.url ? `<a href="${item.url}" target="_blank" class="media-url">${item.url}</a>` : ''}
                     ${item.filePath ? `<a href="${API_BASE}/file/${item.id}" target="_blank" class="media-url">View File</a>` : ''}
-                    <button class="delete-btn" onclick="deleteMedia('${item.id}')">Delete</button>
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <button style="background: #4caf50; padding: 8px 16px; font-size: 14px;" onclick="findSimilarMedia('${item.id}')">Find Similar</button>
+                        <button class="delete-btn" onclick="deleteMedia('${item.id}')">Delete</button>
+                    </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         async function deleteMedia(id) {

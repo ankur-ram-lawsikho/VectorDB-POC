@@ -125,14 +125,34 @@ Body: {
 }
 ```
 
-### Search media
+### Search media (similarity search)
 ```
 POST /api/media/search
 Body: {
   "query": "search term",
-  "limit": 10
+  "limit": 10,
+  "maxDistance": 0.5,
+  "metric": "cosine"
 }
 ```
+**Parameters:**
+- `query` (required): Text query to search for
+- `limit` (optional, default: 10): Maximum number of results
+- `maxDistance` (optional): Maximum distance threshold (default: 0.5 for cosine, 1.0 for L2)
+- `metric` (optional, default: "cosine"): Distance metric - "cosine", "l2", or "inner_product"
+
+**Response includes similarity scores and distance values for each result.**
+
+### Find similar media items
+```
+GET /api/media/:id/similar?limit=10&metric=cosine&maxDistance=0.5
+```
+**Query Parameters:**
+- `limit` (optional, default: 10): Maximum number of results
+- `metric` (optional, default: "cosine"): Distance metric
+- `maxDistance` (optional): Maximum distance threshold
+
+Finds media items similar to the specified media item by ID.
 
 ### Delete media item
 ```
@@ -160,4 +180,8 @@ Open `public/index.html` in your browser to use the simple web interface for man
 - The pgvector extension will be automatically enabled on first run
 - Uploaded files are stored in the `uploads/` directory
 - Vector embeddings are generated using Google Gemini's `text-embedding-004` model (free tier available)
+
+## Documentation
+
+- **pgvector Concepts**: See [PGVECTOR_CONCEPTS.md](./PGVECTOR_CONCEPTS.md) for detailed explanation of pgvector principles and concepts used in this project
 
