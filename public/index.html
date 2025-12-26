@@ -451,79 +451,158 @@
 
             <!-- Search Tab -->
             <div id="search-tab" class="tab-content">
-                <div class="search-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div class="search-input-group" style="flex: 1; margin-right: 10px;">
-                            <input type="text" id="search-query" placeholder="Enter search term..." onkeypress="if(event.key==='Enter') searchMedia()">
-                            <button onclick="searchMedia()">Search</button>
+                <!-- Simple Search Interface -->
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <!-- Main Search Bar -->
+                    <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <input 
+                                type="text" 
+                                id="search-query" 
+                                placeholder="Try: 'how to use MongoDB', 'legal contracts explained', 'database management systems'" 
+                                style="flex: 1; padding: 14px 18px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 8px;"
+                                onkeypress="if(event.key==='Enter') performSearch()"
+                            >
+                            <button 
+                                onclick="performSearch()" 
+                                style="padding: 14px 30px; font-size: 16px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='translateY(0)'"
+                            >
+                                🔍 Search
+                            </button>
                         </div>
-                        <button onclick="checkEmbeddingStats()" style="background: #2196F3; padding: 12px 20px; font-size: 14px;">
-                            Check Embeddings
-                        </button>
-                    </div>
-                    <div id="embedding-stats" style="display: none; padding: 10px; background: #e3f2fd; border-radius: 4px; margin-bottom: 10px; font-size: 14px;"></div>
-                    
-                    <!-- Similarity Search Toggle -->
-                    <div class="search-mode-toggle">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="similarity-toggle" checked onchange="toggleSimilaritySearch()">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <div>
-                            <strong style="color: #333;">Similarity Search</strong>
-                            <div style="font-size: 12px; color: #666; margin-top: 2px;">
-                                AI-powered semantic search using vector embeddings
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Similarity Search Options -->
-                    <div id="similarity-options" class="similarity-options active">
-                        <div class="option-group">
-                            <label>Distance Metric</label>
-                            <div style="display: flex; gap: 15px; margin-top: 8px;">
-                                <label style="font-size: 14px; font-weight: normal; cursor: pointer;">
-                                    <input type="radio" name="metric" value="cosine" checked style="width: auto; margin-right: 5px;">
-                                    Cosine (Recommended)
-                                </label>
-                                <label style="font-size: 14px; font-weight: normal; cursor: pointer;">
-                                    <input type="radio" name="metric" value="l2" style="width: auto; margin-right: 5px;">
-                                    L2 (Euclidean)
-                                </label>
-                                <label style="font-size: 14px; font-weight: normal; cursor: pointer;">
-                                    <input type="radio" name="metric" value="inner_product" style="width: auto; margin-right: 5px;">
-                                    Inner Product
-                                </label>
-                            </div>
-                            <div id="inner-product-note" style="display: none; font-size: 12px; color: #666; margin-top: 5px; padding: 8px; background: #fff3cd; border-radius: 4px;">
-                                ⚠️ Inner Product works differently: lower values = more similar. Recommended threshold: 0.0 to 0.5.
-                            </div>
-                            </div>
-                        </div>
-
-                        <div class="option-group">
-                            <label>
-                                Max Distance Threshold
-                                <span id="max-distance-value" class="range-value">1.0</span>
+                        
+                        <!-- Simple Search Type Selector -->
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <span style="color: #666; font-size: 14px; margin-right: 5px;">Search type:</span>
+                            <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 14px; border-radius: 6px; background: #e8f5e9; border: 2px solid #4caf50; transition: all 0.2s;" 
+                                   onmouseover="this.style.background='#c8e6c9'" onmouseout="this.style.background='#e8f5e9'">
+                                <input type="radio" name="search-mode" value="semantic" checked style="width: auto; margin-right: 6px;" onchange="updateSearchMode()">
+                                <span style="font-size: 14px; font-weight: 500;">🧠 Semantic</span>
                             </label>
-                            <input type="range" id="max-distance" min="0.1" max="2.0" step="0.1" value="1.0" 
-                                   oninput="document.getElementById('max-distance-value').textContent = this.value; updateMetricNote();">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 4px;">
-                                <span>Strict (0.1)</span>
-                                <span>Moderate (0.5)</span>
-                                <span>Permissive (2.0)</span>
+                            <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 14px; border-radius: 6px; background: #fff3e0; border: 2px solid #ff9800; transition: all 0.2s;"
+                                   onmouseover="this.style.background='#ffe0b2'" onmouseout="this.style.background='#fff3e0'">
+                                <input type="radio" name="search-mode" value="similarity" style="width: auto; margin-right: 6px;" onchange="updateSearchMode()">
+                                <span style="font-size: 14px; font-weight: 500;">🔍 Similarity</span>
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 14px; border-radius: 6px; background: #f5f5f5; border: 2px solid #e0e0e0; transition: all 0.2s;"
+                                   onmouseover="this.style.background='#eeeeee'" onmouseout="this.style.background='#f5f5f5'">
+                                <input type="radio" name="search-mode" value="keyword" style="width: auto; margin-right: 6px;" onchange="updateSearchMode()">
+                                <span style="font-size: 14px; font-weight: 500;">📝 Keyword</span>
+                            </label>
+                            <button 
+                                onclick="toggleAdvancedOptions()" 
+                                style="margin-left: auto; padding: 6px 12px; font-size: 12px; background: transparent; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; color: #666; transition: all 0.2s;"
+                                onmouseover="this.style.borderColor='#667eea'; this.style.color='#667eea'"
+                                onmouseout="this.style.borderColor='#ddd'; this.style.color='#666'"
+                            >
+                                ⚙️ Advanced
+                            </button>
+                        </div>
+                        
+                        <!-- Info Message -->
+                        <div id="search-info" style="margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 6px; font-size: 13px; color: #1976d2;">
+                            <div style="margin-bottom: 8px;">
+                                <strong>💡 Semantic Search</strong> understands meaning and finds related content, even without exact word matches.
                             </div>
-                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                                💡 Tip: Increase threshold if getting 0 results
+                            <div id="semantic-examples" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(25, 118, 210, 0.2);">
+                                <strong style="font-size: 12px;">Example queries:</strong>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                                    <span style="padding: 4px 10px; background: white; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid #90caf9;" 
+                                          onclick="document.getElementById('search-query').value='how to use databases'; performSearch();"
+                                          onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">
+                                        "how to use databases"
+                                    </span>
+                                    <span style="padding: 4px 10px; background: white; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid #90caf9;" 
+                                          onclick="document.getElementById('search-query').value='contract law basics'; performSearch();"
+                                          onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">
+                                        "contract law basics"
+                                    </span>
+                                    <span style="padding: 4px 10px; background: white; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid #90caf9;" 
+                                          onclick="document.getElementById('search-query').value='NoSQL database tutorial'; performSearch();"
+                                          onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">
+                                        "NoSQL database tutorial"
+                                    </span>
+                                    <span style="padding: 4px 10px; background: white; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid #90caf9;" 
+                                          onclick="document.getElementById('search-query').value='legal agreements between parties'; performSearch();"
+                                          onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">
+                                        "legal agreements between parties"
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options (Collapsed by Default) -->
+                    <div id="advanced-options" style="display: none; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                        <h3 style="margin-top: 0; margin-bottom: 15px; color: #333;">Advanced Search Options</h3>
+                        
+                        <!-- Semantic Search Options -->
+                        <div id="semantic-advanced">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px;">
+                                    Minimum Similarity: <span id="min-similarity-value" style="color: #667eea; font-weight: 600;">0.3</span>
+                                </label>
+                                <input type="range" id="min-similarity" min="0.1" max="0.9" step="0.1" value="0.3" 
+                                       style="width: 100%;"
+                                       oninput="document.getElementById('min-similarity-value').textContent = this.value;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 4px;">
+                                    <span>More Results</span>
+                                    <span>Balanced</span>
+                                    <span>Fewer, Better</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="option-group">
-                            <label>Max Results</label>
-                            <input type="number" id="search-limit" min="1" max="50" value="20" style="max-width: 100px;">
+                        <!-- Similarity Search Options -->
+                        <div id="similarity-advanced" style="display: none;">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Distance Metric</label>
+                                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                    <label style="font-size: 14px; cursor: pointer;">
+                                        <input type="radio" name="metric" value="cosine" checked style="width: auto; margin-right: 5px;">
+                                        Cosine
+                                    </label>
+                                    <label style="font-size: 14px; cursor: pointer;">
+                                        <input type="radio" name="metric" value="l2" style="width: auto; margin-right: 5px;">
+                                        L2 (Euclidean)
+                                    </label>
+                                    <label style="font-size: 14px; cursor: pointer;">
+                                        <input type="radio" name="metric" value="inner_product" style="width: auto; margin-right: 5px;">
+                                        Inner Product
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 8px;">
+                                    Max Distance Threshold: <span id="max-distance-value" style="color: #667eea; font-weight: 600;">1.0</span>
+                                </label>
+                                <input type="range" id="max-distance" min="0.1" max="2.0" step="0.1" value="1.0" 
+                                       style="width: 100%;"
+                                       oninput="document.getElementById('max-distance-value').textContent = this.value;">
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 4px;">
+                                    <span>Strict</span>
+                                    <span>Moderate</span>
+                                    <span>Permissive</span>
+                                </div>
+                            </div>
                         </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 8px;">Max Results</label>
+                            <input type="number" id="search-limit" min="1" max="50" value="20" style="width: 100px; padding: 8px; border: 2px solid #e0e0e0; border-radius: 4px;">
+                        </div>
+
+                        <button onclick="checkEmbeddingStats()" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            Check Embedding Stats
+                        </button>
+                        <div id="embedding-stats" style="display: none; margin-top: 10px; padding: 10px; background: #e3f2fd; border-radius: 4px; font-size: 14px;"></div>
                     </div>
                 </div>
+                
+                <!-- Results Area -->
                 <div id="search-results" class="media-grid"></div>
             </div>
 
@@ -673,40 +752,279 @@
             }
         }
 
-        function toggleSimilaritySearch() {
-            const toggle = document.getElementById('similarity-toggle');
-            const options = document.getElementById('similarity-options');
+        let advancedOptionsVisible = false;
+
+        function toggleAdvancedOptions() {
+            advancedOptionsVisible = !advancedOptionsVisible;
+            const options = document.getElementById('advanced-options');
+            const button = event.target;
+            if (advancedOptionsVisible) {
+                options.style.display = 'block';
+                button.textContent = '⚙️ Hide Advanced';
+            } else {
+                options.style.display = 'none';
+                button.textContent = '⚙️ Advanced';
+            }
+        }
+
+        function updateSearchMode() {
+            const searchMode = document.querySelector('input[name="search-mode"]:checked')?.value || 'semantic';
+            const infoDiv = document.getElementById('search-info');
+            const semanticAdvanced = document.getElementById('semantic-advanced');
+            const similarityAdvanced = document.getElementById('similarity-advanced');
             
-            if (toggle.checked) {
-                options.classList.add('active');
-            } else {
-                options.classList.remove('active');
-            }
-        }
-
-        function updateDistanceThreshold(value) {
-            document.getElementById('max-distance-value').textContent = value;
-            updateMetricNote();
-        }
-
-        function updateMetricNote() {
-            const metric = document.querySelector('input[name="metric"]:checked')?.value;
-            const note = document.getElementById('inner-product-note');
-            if (metric === 'inner_product') {
-                note.style.display = 'block';
-            } else {
-                note.style.display = 'none';
-            }
-        }
-
-        // Update note when metric changes
-        document.addEventListener('DOMContentLoaded', () => {
-            const metricInputs = document.querySelectorAll('input[name="metric"]');
-            metricInputs.forEach(input => {
-                input.addEventListener('change', updateMetricNote);
+            // Update visual styling of radio buttons
+            document.querySelectorAll('input[name="search-mode"]').forEach(radio => {
+                const label = radio.closest('label');
+                if (radio.checked) {
+                    if (radio.value === 'semantic') {
+                        label.style.background = '#e8f5e9';
+                        label.style.borderColor = '#4caf50';
+                    } else if (radio.value === 'similarity') {
+                        label.style.background = '#fff3e0';
+                        label.style.borderColor = '#ff9800';
+                    } else {
+                        label.style.background = '#f5f5f5';
+                        label.style.borderColor = '#e0e0e0';
+                    }
+                } else {
+                    if (radio.value === 'semantic') {
+                        label.style.background = '#f5f5f5';
+                        label.style.borderColor = '#e0e0e0';
+                    } else if (radio.value === 'similarity') {
+                        label.style.background = '#f5f5f5';
+                        label.style.borderColor = '#e0e0e0';
+                    } else {
+                        label.style.background = '#f5f5f5';
+                        label.style.borderColor = '#e0e0e0';
+                    }
+                }
             });
-            updateMetricNote();
+            
+            if (searchMode === 'semantic') {
+                infoDiv.innerHTML = '<strong>💡 Semantic Search</strong> understands meaning and finds related content, even without exact word matches.';
+                infoDiv.style.background = '#e3f2fd';
+                infoDiv.style.color = '#1976d2';
+                if (semanticAdvanced) semanticAdvanced.style.display = 'block';
+                if (similarityAdvanced) similarityAdvanced.style.display = 'none';
+            } else if (searchMode === 'similarity') {
+                infoDiv.innerHTML = '<strong>🔍 Similarity Search</strong> uses vector distance to find similar items. Best for precise matching.';
+                infoDiv.style.background = '#fff3e0';
+                infoDiv.style.color = '#e65100';
+                if (semanticAdvanced) semanticAdvanced.style.display = 'none';
+                if (similarityAdvanced) similarityAdvanced.style.display = 'block';
+            } else {
+                infoDiv.innerHTML = '<strong>📝 Keyword Search</strong> finds items containing your exact search terms in title, content, or description.';
+                infoDiv.style.background = '#f5f5f5';
+                infoDiv.style.color = '#616161';
+                if (semanticAdvanced) semanticAdvanced.style.display = 'none';
+                if (similarityAdvanced) similarityAdvanced.style.display = 'none';
+            }
+            infoDiv.style.display = 'block';
+        }
+
+        // Initialize search mode on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSearchMode();
         });
+
+        async function performSearch() {
+            const query = document.getElementById('search-query').value.trim();
+            if (!query) {
+                showMessage('Please enter a search term', 'error');
+                return;
+            }
+
+            const searchMode = document.querySelector('input[name="search-mode"]:checked')?.value || 'semantic';
+            
+            // Show loading state
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">🔍 Searching...</div>';
+            
+            try {
+                if (searchMode === 'semantic') {
+                    await semanticSearch(query);
+                } else if (searchMode === 'similarity') {
+                    await searchMedia();
+                } else {
+                    await keywordSearch(query);
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+                resultsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #f44336;">❌ Search failed. Please try again.</div>';
+            }
+        }
+
+        async function semanticSearch(query) {
+            try {
+                const limit = parseInt(document.getElementById('search-limit')?.value) || 20;
+                const minSimilarity = parseFloat(document.getElementById('min-similarity')?.value) || 0.3;
+                
+                const response = await fetch(`${API_BASE}/search/semantic`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        query, 
+                        limit,
+                        minSimilarity,
+                        includeRelated: true,
+                        contextBoost: true
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    const container = document.getElementById('search-results');
+                    
+                    // Display related concepts if available
+                    if (data.relatedConcepts && data.relatedConcepts.length > 0) {
+                        const conceptsHtml = `
+                            <div style="padding: 15px; background: #e8f5e9; border-radius: 8px; margin-bottom: 20px;">
+                                <strong>Related Concepts:</strong>
+                                <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+                                    ${data.relatedConcepts.map(concept => 
+                                        `<span style="padding: 4px 12px; background: white; border-radius: 20px; font-size: 12px; cursor: pointer;" onclick="document.getElementById('search-query').value='${concept}'; performSearch();">${concept}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML = conceptsHtml;
+                    }
+                    
+                    // Display helpful message if present (even when results exist)
+                    if (data.helpfulMessage) {
+                        const helpfulHtml = `
+                            <div style="padding: 12px; background: #fff3cd; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #856404; border-left: 4px solid #ffc107;">
+                                <strong>ℹ️ Note:</strong> ${data.helpfulMessage}
+                            </div>
+                        `;
+                        container.innerHTML += helpfulHtml;
+                    }
+                    
+                    // Display search metadata
+                    if (data.searchMetadata) {
+                        const metadataHtml = `
+                            <div style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 15px; font-size: 12px; color: #666;">
+                                <strong>Search Stats:</strong> 
+                                Found ${data.searchMetadata.filteredResults} results from ${data.searchMetadata.totalCandidates} candidates 
+                                (Avg similarity: ${(data.searchMetadata.averageSimilarity * 100).toFixed(1)}%)
+                                ${data.searchMetadata.effectiveMinSimilarity !== undefined ? ` | Threshold: ${(data.searchMetadata.effectiveMinSimilarity * 100).toFixed(0)}%` : ''}
+                            </div>
+                        `;
+                        container.innerHTML += metadataHtml;
+                    }
+                    
+                    // Display results with enhanced information
+                    if (data.results && data.results.length > 0) {
+                        displaySemanticResults(data.results, 'search-results');
+                        showMessage(`Found ${data.results.length} semantically relevant result(s)`, 'success');
+                    } else {
+                        // Show helpful message if available
+                        let noResultsHtml = '<div style="text-align: center; padding: 40px; background: #fff3cd; border-radius: 8px; border: 2px solid #ffc107; max-width: 600px; margin: 0 auto;">';
+                        noResultsHtml += '<h3 style="color: #856404; margin-bottom: 15px;">❌ No Results Found</h3>';
+                        
+                        if (data.helpfulMessage) {
+                            noResultsHtml += `<p style="color: #856404; margin-bottom: 20px; line-height: 1.6;">${data.helpfulMessage}</p>`;
+                        } else {
+                            noResultsHtml += '<p style="color: #856404; margin-bottom: 20px;">No semantically relevant results found for your query.</p>';
+                        }
+                        
+                        // Show search metadata if available
+                        if (data.searchMetadata) {
+                            noResultsHtml += '<div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px; text-align: left;">';
+                            noResultsHtml += `<strong>Search Details:</strong><br>`;
+                            noResultsHtml += `• Total candidates: ${data.searchMetadata.totalCandidates}<br>`;
+                            if (data.searchMetadata.effectiveMinSimilarity) {
+                                noResultsHtml += `• Similarity threshold used: ${(data.searchMetadata.effectiveMinSimilarity * 100).toFixed(0)}%<br>`;
+                            }
+                            noResultsHtml += '</div>';
+                        }
+                        
+                        // Suggestions
+                        noResultsHtml += '<div style="text-align: left; background: white; padding: 15px; border-radius: 6px;">';
+                        noResultsHtml += '<strong style="color: #856404;">💡 Suggestions:</strong><ul style="margin: 10px 0; padding-left: 20px; color: #856404;">';
+                        noResultsHtml += '<li>Try different search terms or phrases</li>';
+                        noResultsHtml += '<li>Lower the minimum similarity in Advanced options</li>';
+                        noResultsHtml += '<li>Check if items have embeddings (click "Check Embedding Stats")</li>';
+                        noResultsHtml += '<li>Add more related content to your database</li>';
+                        noResultsHtml += '<li>Try using Keyword search instead</li>';
+                        noResultsHtml += '</ul></div>';
+                        
+                        noResultsHtml += '</div>';
+                        container.innerHTML = noResultsHtml;
+                        showMessage('No results found - see suggestions below', 'error');
+                    }
+                } else {
+                    showMessage(data.error || 'Semantic search failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        function displaySemanticResults(results, containerId) {
+            const container = document.getElementById(containerId);
+            const existingContent = container.innerHTML;
+            
+            container.innerHTML = existingContent + results.map(result => {
+                const similarityBadge = result.semanticMatch 
+                    ? `<span style="padding: 4px 8px; background: #4caf50; color: white; border-radius: 4px; font-size: 11px; margin-left: 8px;">Strong Match</span>`
+                    : '';
+                
+                const relevanceScore = result.relevanceScore 
+                    ? `<div style="margin: 8px 0; padding: 6px; background: #fff3cd; border-radius: 4px; font-size: 12px;">
+                         <strong>Relevance:</strong> ${(result.relevanceScore * 100).toFixed(1)}% 
+                         (Similarity: ${(result.similarity * 100).toFixed(1)}%)
+                       </div>`
+                    : `<div style="margin: 8px 0; padding: 6px; background: #e3f2fd; border-radius: 4px; font-size: 12px;">
+                         <strong>Similarity:</strong> ${(result.similarity * 100).toFixed(1)}%
+                       </div>`;
+                
+                return `
+                <div class="media-card">
+                    <span class="media-type ${result.item.type}">${result.item.type.toUpperCase()}</span>
+                    <h3>${result.item.title}${similarityBadge}</h3>
+                    ${relevanceScore}
+                    ${result.item.description ? `<div class="media-description">${result.item.description}</div>` : ''}
+                    ${result.item.content ? `<div class="media-content">${result.item.content.substring(0, 200)}${result.item.content.length > 200 ? '...' : ''}</div>` : ''}
+                    ${result.item.url ? `<a href="${result.item.url}" target="_blank" class="media-url">${result.item.url}</a>` : ''}
+                    ${result.item.filePath ? `<a href="${API_BASE}/file/${result.item.id}" target="_blank" class="media-url">View File</a>` : ''}
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <button style="background: #4caf50; padding: 8px 16px; font-size: 14px;" onclick="findSimilarMedia('${result.item.id}')">Find Similar</button>
+                        <button class="delete-btn" onclick="deleteMedia('${result.item.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        async function keywordSearch(query) {
+            const container = document.getElementById('search-results');
+            try {
+                const response = await fetch(`${API_BASE}`);
+                const allItems = await response.json();
+                
+                const searchLower = query.toLowerCase();
+                const filtered = allItems.filter(item => {
+                    const title = (item.title || '').toLowerCase();
+                    const content = (item.content || '').toLowerCase();
+                    const description = (item.description || '').toLowerCase();
+                    return title.includes(searchLower) || 
+                           content.includes(searchLower) || 
+                           description.includes(searchLower);
+                });
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<p>No items found matching your search.</p>';
+                    showMessage('No results found', 'error');
+                } else {
+                    displayMedia(filtered, 'search-results', false);
+                    showMessage(`Found ${filtered.length} result(s) using keyword search`, 'success');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
 
         async function searchMedia() {
             const query = document.getElementById('search-query').value;
@@ -715,7 +1033,7 @@
                 return;
             }
 
-            const useSimilarity = document.getElementById('similarity-toggle').checked;
+            const useSimilarity = document.getElementById('similarity-toggle')?.checked;
             const container = document.getElementById('search-results');
 
             if (!useSimilarity) {

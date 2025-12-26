@@ -125,7 +125,36 @@ Body: {
 }
 ```
 
-### Search media (similarity search)
+### Semantic Search (Recommended)
+```
+POST /api/media/search/semantic
+Body: {
+  "query": "search term",
+  "limit": 10,
+  "minSimilarity": 0.3,
+  "includeRelated": true,
+  "contextBoost": true
+}
+```
+**Parameters:**
+- `query` (required): Natural language query
+- `limit` (optional, default: 10): Maximum number of results
+- `minSimilarity` (optional, default: 0.3): Minimum similarity threshold (0-1)
+- `includeRelated` (optional, default: true): Include related concepts in response
+- `contextBoost` (optional, default: true): Boost results based on context matching
+
+**Features:**
+- Understands meaning and context, not just keywords
+- Returns related concepts for query expansion
+- Enhanced relevance scoring with context awareness
+- Identifies strong semantic matches
+
+**Response includes:**
+- Results with relevance scores and semantic match indicators
+- Related concepts for further exploration
+- Search metadata (candidates, average similarity, etc.)
+
+### Similarity Search (Vector-based)
 ```
 POST /api/media/search
 Body: {

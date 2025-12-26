@@ -174,6 +174,38 @@ router.post('/search', async (req: Request, res: Response) => {
   }
 });
 
+// Semantic search endpoint - understands meaning and context
+router.post('/search/semantic', async (req: Request, res: Response) => {
+  try {
+    const { query, limit, minSimilarity, includeRelated, contextBoost } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    console.log(`Semantic search request: query="${query}", limit=${limit || 10}`);
+
+    const result = await mediaService.semanticSearch(
+      query,
+      limit || 10,
+      {
+        minSimilarity: minSimilarity || 0.3,
+        includeRelated: includeRelated !== false, // Default true
+        contextBoost: contextBoost !== false, // Default true
+      }
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error in semantic search:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ error: 'Failed to perform semantic search', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to perform semantic search' });
+    }
+  }
+});
+
 // Find similar media items to a given media item (must be before /:id route)
 router.get('/:id/similar', async (req: Request, res: Response) => {
   try {

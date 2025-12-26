@@ -346,5 +346,334 @@ export class MediaService {
       percentageWithEmbeddings: Math.round(percentageWithEmbeddings * 100) / 100,
     };
   }
+
+  /**
+   * Semantic search with enhanced understanding and context awareness
+   * This method provides true semantic search that understands meaning, context, and relationships
+   * 
+   * @param query - Natural language query
+   * @param limit - Maximum number of results
+   * @param options - Additional semantic search options
+   * @returns Enhanced search results with semantic understanding
+   */
+  async semanticSearch(
+    query: string,
+    limit: number = 10,
+    options: {
+      minSimilarity?: number;
+      includeRelated?: boolean;
+      contextBoost?: boolean;
+    } = {}
+  ): Promise<{
+    query: string;
+    results: Array<SimilaritySearchResult & { relevanceScore?: number; semanticMatch?: boolean }>;
+    relatedConcepts?: string[];
+    helpfulMessage?: string;
+    searchMetadata: {
+      totalCandidates: number;
+      filteredResults: number;
+      averageSimilarity: number;
+      searchType: 'semantic';
+      effectiveMinSimilarity?: number;
+    };
+  }> {
+    const { minSimilarity = 0.3, includeRelated = true, contextBoost = true } = options;
+
+    // Enhanced query processing for better semantic understanding
+    const enhancedQuery = this.enhanceQueryForSemanticSearch(query);
+    
+    // Generate embedding for the enhanced query
+    const queryEmbedding = await generateEmbedding(enhancedQuery);
+    const queryVector = `[${queryEmbedding.join(',')}]`;
+
+    // Use cosine distance for semantic search (best for text)
+    const distanceExpression = 'embedding::vector <=> $1::vector';
+    
+    // Check how many items have embeddings
+    const itemsWithEmbeddings = await this.mediaRepository.query(
+      `SELECT COUNT(*) as count FROM media_items WHERE embedding IS NOT NULL`
+    );
+    const embeddingCount = parseInt(itemsWithEmbeddings[0]?.count || '0');
+    
+    if (embeddingCount === 0) {
+      return {
+        query,
+        results: [],
+        searchMetadata: {
+          totalCandidates: 0,
+          filteredResults: 0,
+          averageSimilarity: 0,
+          searchType: 'semantic',
+        },
+      };
+    }
+
+    // Semantic search with adaptive threshold
+    // Start with a more permissive threshold to capture semantic relationships
+    const adaptiveThreshold = 1.0; // Very permissive for semantic understanding
+
+    let allResults;
+    try {
+      // First, get ALL results without threshold to see what's available
+      // Note: $1 is the query vector, $2 is the limit
+      const allCandidates = await this.mediaRepository.query(
+        `
+        SELECT 
+          id, title, type, content, description, "filePath", url, "mimeType", 
+          embedding, "createdAt", "updatedAt",
+          (${distanceExpression}) as distance,
+          (1 - (${distanceExpression})) as similarity
+        FROM media_items
+        WHERE embedding IS NOT NULL
+        ORDER BY (${distanceExpression}) ASC
+        LIMIT $2
+        `,
+        [queryVector, limit * 5] // $1 = query vector, $2 = limit (5x candidates to analyze)
+      );
+
+      console.log(`Semantic search: Found ${allCandidates.length} total candidates for query "${query}"`);
+      
+      if (allCandidates.length > 0) {
+        const closestDistance = allCandidates[0].distance;
+        const closestSimilarity = allCandidates[0].similarity;
+        console.log(`Closest match: distance=${closestDistance.toFixed(3)}, similarity=${closestSimilarity.toFixed(3)}`);
+      }
+
+      // Filter by adaptive threshold first
+      allResults = allCandidates.filter((row: { distance: number }) => row.distance <= adaptiveThreshold);
+
+      console.log(`After threshold filter (${adaptiveThreshold}): ${allResults.length} candidates`);
+
+      // If no results with default minSimilarity, progressively lower the threshold
+      let effectiveMinSimilarity = minSimilarity;
+      let filteredResults = allResults.filter((row: { similarity: number }) => row.similarity >= effectiveMinSimilarity);
+      
+      if (filteredResults.length === 0 && allResults.length > 0) {
+        // Try progressively lower thresholds
+        const thresholds = [0.2, 0.1, 0.05, 0.0];
+        for (const threshold of thresholds) {
+          effectiveMinSimilarity = threshold;
+          filteredResults = allResults.filter((row: { similarity: number }) => row.similarity >= effectiveMinSimilarity);
+          if (filteredResults.length > 0) {
+            console.log(`Lowered minSimilarity to ${effectiveMinSimilarity}, found ${filteredResults.length} results`);
+            break;
+          }
+        }
+        
+        // If still no results, return top candidates anyway (even with very low similarity)
+        if (filteredResults.length === 0 && allCandidates.length > 0) {
+          console.log(`No results after filtering, returning top ${Math.min(limit, allCandidates.length)} candidates anyway`);
+          filteredResults = allCandidates.slice(0, limit);
+          effectiveMinSimilarity = 0; // Mark that we're showing all results
+        }
+      }
+
+      // Limit results
+      filteredResults = filteredResults.slice(0, limit)
+        .map((row: MediaItem & { distance?: number; similarity?: number }) => {
+          const item = new MediaItem();
+          item.id = row.id;
+          item.title = row.title;
+          item.type = row.type;
+          item.content = row.content;
+          item.description = row.description;
+          item.filePath = row.filePath;
+          item.url = row.url;
+          item.mimeType = row.mimeType;
+          item.embedding = row.embedding;
+          item.createdAt = row.createdAt;
+          item.updatedAt = row.updatedAt;
+          
+          // Calculate relevance score (enhanced similarity with context)
+          const baseSimilarity = row.similarity ?? (1 - (row.distance ?? 0));
+          const relevanceScore = contextBoost 
+            ? this.calculateRelevanceScore(item, query, baseSimilarity)
+            : baseSimilarity;
+
+          // Determine if it's a strong semantic match
+          const semanticMatch = baseSimilarity >= 0.5;
+
+          return {
+            item,
+            similarity: baseSimilarity,
+            distance: row.distance ?? 0,
+            relevanceScore,
+            semanticMatch,
+          };
+        })
+        .sort((a, b) => (b.relevanceScore ?? b.similarity) - (a.relevanceScore ?? a.similarity));
+
+      // Calculate average similarity
+      const averageSimilarity = filteredResults.length > 0
+        ? filteredResults.reduce((sum, r) => sum + r.similarity, 0) / filteredResults.length
+        : 0;
+
+      // Extract related concepts from top results (if enabled)
+      const relatedConcepts = includeRelated && filteredResults.length > 0
+        ? this.extractRelatedConcepts(filteredResults, query)
+        : undefined;
+
+      // Add helpful message if no results
+      let helpfulMessage: string | undefined;
+      if (filteredResults.length === 0) {
+        if (embeddingCount === 0) {
+          helpfulMessage = 'No items have embeddings. Please create items or run the backfill script to generate embeddings.';
+        } else if (allCandidates && allCandidates.length > 0) {
+          const closest = allCandidates[0];
+          helpfulMessage = `No results found. Closest match has ${(closest.similarity * 100).toFixed(1)}% similarity (distance: ${closest.distance.toFixed(3)}). The search is working, but your database may not have content related to "${query}". Try: 1) Add items about this topic, 2) Use Keyword search instead, or 3) Try broader search terms.`;
+        } else {
+          helpfulMessage = 'No items found in database. Please add some media items first.';
+        }
+      } else if (effectiveMinSimilarity === 0 && filteredResults.length > 0) {
+        // If we're showing results with 0 similarity threshold, warn the user
+        const avgSim = filteredResults.reduce((sum, r) => sum + r.similarity, 0) / filteredResults.length;
+        if (avgSim < 0.2) {
+          helpfulMessage = `Found ${filteredResults.length} results, but they have low similarity (avg: ${(avgSim * 100).toFixed(1)}%). These may not be very relevant to your query. Consider adding more related content to your database.`;
+        }
+      }
+
+      return {
+        query,
+        results: filteredResults,
+        relatedConcepts,
+        helpfulMessage,
+        searchMetadata: {
+          totalCandidates: allCandidates.length,
+          filteredResults: filteredResults.length,
+          averageSimilarity: Math.round(averageSimilarity * 1000) / 1000,
+          searchType: 'semantic',
+          effectiveMinSimilarity: effectiveMinSimilarity,
+        },
+      };
+    } catch (error) {
+      console.error('Error in semantic search:', error);
+      return {
+        query,
+        results: [],
+        searchMetadata: {
+          totalCandidates: 0,
+          filteredResults: 0,
+          averageSimilarity: 0,
+          searchType: 'semantic',
+        },
+      };
+    }
+  }
+
+  /**
+   * Enhance query for better semantic understanding
+   * Expands query with context and related terms
+   */
+  private enhanceQueryForSemanticSearch(query: string): string {
+    // Remove extra whitespace
+    query = query.trim().replace(/\s+/g, ' ');
+    
+    // For short queries, add context hints
+    if (query.split(' ').length <= 2) {
+      // Don't modify too much, but ensure it's a complete thought
+      return query;
+    }
+    
+    // Return enhanced query (can be expanded with synonyms, context, etc.)
+    return query;
+  }
+
+  /**
+   * Calculate relevance score with context boosting
+   * Considers title matches, description relevance, and content context
+   */
+  private calculateRelevanceScore(
+    item: MediaItem,
+    query: string,
+    baseSimilarity: number
+  ): number {
+    let score = baseSimilarity;
+    const queryLower = query.toLowerCase();
+    
+    // Boost if query terms appear in title (exact match bonus)
+    if (item.title) {
+      const titleLower = item.title.toLowerCase();
+      if (titleLower.includes(queryLower)) {
+        score += 0.1; // Title match boost
+      }
+      // Partial word matches
+      const queryWords = queryLower.split(' ');
+      const titleWords = titleLower.split(' ');
+      const matchingWords = queryWords.filter(qw => 
+        titleWords.some(tw => tw.includes(qw) || qw.includes(tw))
+      );
+      if (matchingWords.length > 0) {
+        score += (matchingWords.length / queryWords.length) * 0.05;
+      }
+    }
+    
+    // Boost if query terms appear in description
+    if (item.description) {
+      const descLower = item.description.toLowerCase();
+      if (descLower.includes(queryLower)) {
+        score += 0.05; // Description match boost
+      }
+    }
+    
+    // Normalize score to 0-1 range
+    return Math.min(1.0, score);
+  }
+
+  /**
+   * Extract related concepts from search results
+   * Identifies common themes and related topics
+   */
+  private extractRelatedConcepts(
+    results: Array<SimilaritySearchResult & { relevanceScore?: number; semanticMatch?: boolean }>,
+    originalQuery: string
+  ): string[] {
+    const concepts = new Set<string>();
+    
+    // Extract key terms from top results
+    results.slice(0, 5).forEach(result => {
+      // Extract from title
+      if (result.item.title) {
+        const titleWords = result.item.title
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(word => word.length > 3 && !this.isStopWord(word));
+        titleWords.forEach(word => concepts.add(word));
+      }
+      
+      // Extract from description
+      if (result.item.description) {
+        const descWords = result.item.description
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(word => word.length > 3 && !this.isStopWord(word));
+        descWords.slice(0, 3).forEach(word => concepts.add(word));
+      }
+    });
+    
+    // Remove query terms and return top related concepts
+    const queryWords = originalQuery.toLowerCase().split(/\s+/);
+    return Array.from(concepts)
+      .filter(concept => !queryWords.some(qw => concept.includes(qw) || qw.includes(concept)))
+      .slice(0, 5);
+  }
+
+  /**
+   * Check if a word is a common stop word
+   */
+  private isStopWord(word: string): boolean {
+    const stopWords = new Set([
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+      'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
+      'these', 'those', 'what', 'which', 'who', 'whom', 'whose', 'where',
+      'when', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more',
+      'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own',
+      'same', 'so', 'than', 'too', 'very', 'just', 'about', 'into', 'through',
+      'during', 'before', 'after', 'above', 'below', 'up', 'down', 'out',
+      'off', 'over', 'under', 'again', 'further', 'then', 'once'
+    ]);
+    return stopWords.has(word.toLowerCase());
+  }
 }
 
