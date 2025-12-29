@@ -2,10 +2,12 @@ import express, { Request, Response } from 'express';
 import { MediaService } from '../services/mediaService';
 import { MediaType } from '../entities/MediaItem';
 import { upload } from '../middleware/upload';
+import { RecommendationService } from '../services/recommendationService';
 import path from 'path';
 
 const router = express.Router();
 const mediaService = new MediaService();
+const recommendationService = new RecommendationService();
 
 // Get all media items
 router.get('/', async (req: Request, res: Response) => {
@@ -278,6 +280,281 @@ router.get('/file/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error serving file:', error);
     res.status(500).json({ error: 'Failed to serve file' });
+  }
+});
+
+// ==================== RECOMMENDATION ENDPOINTS ====================
+
+/**
+ * Get item-based recommendations
+ * GET /api/media/recommendations/item/:id
+ * Query params: limit, minSimilarity, excludeIds (comma-separated)
+ */
+router.get('/recommendations/item/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const minSimilarity = req.query.minSimilarity 
+      ? parseFloat(req.query.minSimilarity as string) 
+      : 0.3;
+    const excludeIds = req.query.excludeIds 
+      ? (req.query.excludeIds as string).split(',').filter(id => id.trim())
+      : [];
+
+    const result = await recommendationService.getItemBasedRecommendations(
+      id,
+      limit,
+      minSimilarity,
+      excludeIds
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting item-based recommendations:', error);
+    if (error instanceof Error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message.includes('embedding')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to get recommendations' });
+    }
+  }
+});
+
+/**
+ * Get multi-item based recommendations
+ * POST /api/media/recommendations/multi-item
+ * Body: { itemIds: string[], limit?: number, minSimilarity?: number, excludeIds?: string[] }
+ */
+router.post('/recommendations/multi-item', async (req: Request, res: Response) => {
+  try {
+    const { itemIds, limit = 10, minSimilarity = 0.3, excludeIds = [] } = req.body;
+
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({ error: 'itemIds array is required' });
+    }
+
+    const result = await recommendationService.getMultiItemRecommendations(
+      itemIds,
+      limit,
+      minSimilarity,
+      excludeIds
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting multi-item recommendations:', error);
+    if (error instanceof Error) {
+      if (error.message.includes('not found') || error.message.includes('No source items')) {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message.includes('embedding')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to get recommendations' });
+    }
+  }
+});
+
+/**
+ * Get content-based recommendations
+ * POST /api/media/recommendations/content-based
+ * Body: { query: string, limit?: number, minSimilarity?: number, excludeIds?: string[] }
+ */
+router.post('/recommendations/content-based', async (req: Request, res: Response) => {
+  try {
+    const { query, limit = 10, minSimilarity = 0.3, excludeIds = [] } = req.body;
+
+    if (!query || typeof query !== 'string' || query.trim() === '') {
+      return res.status(400).json({ error: 'query is required' });
+    }
+
+    const result = await recommendationService.getContentBasedRecommendations(
+      query,
+      limit,
+      minSimilarity,
+      excludeIds
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting content-based recommendations:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to get recommendations' });
+    }
+  }
+});
+
+/**
+ * Get hybrid recommendations
+ * POST /api/media/recommendations/hybrid
+ * Body: { 
+ *   itemIds?: string[], 
+ *   query?: string, 
+ *   limit?: number, 
+ *   minSimilarity?: number, 
+ *   excludeIds?: string[],
+ *   weights?: { itemBased?: number, contentBased?: number }
+ * }
+ */
+router.post('/recommendations/hybrid', async (req: Request, res: Response) => {
+  try {
+    const { 
+      itemIds, 
+      query, 
+      limit = 10, 
+      minSimilarity = 0.3, 
+      excludeIds = [],
+      weights
+    } = req.body;
+
+    if ((!itemIds || itemIds.length === 0) && (!query || query.trim() === '')) {
+      return res.status(400).json({ 
+        error: 'Either itemIds or query must be provided for hybrid recommendations' 
+      });
+    }
+
+    const result = await recommendationService.getHybridRecommendations({
+      itemIds,
+      query,
+      limit,
+      minSimilarity,
+      excludeIds,
+      weights,
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting hybrid recommendations:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to get recommendations' });
+    }
+  }
+});
+
+/**
+ * Get recommendations (auto-detect strategy)
+ * POST /api/media/recommendations
+ * Body: { 
+ *   itemId?: string,
+ *   itemIds?: string[],
+ *   query?: string,
+ *   strategy?: 'item-based' | 'multi-item' | 'content-based' | 'hybrid',
+ *   limit?: number,
+ *   minSimilarity?: number,
+ *   excludeIds?: string[],
+ *   weights?: { itemBased?: number, contentBased?: number }
+ * }
+ */
+router.post('/recommendations', async (req: Request, res: Response) => {
+  try {
+    const { 
+      itemId,
+      itemIds,
+      query,
+      strategy,
+      limit = 10,
+      minSimilarity = 0.3,
+      excludeIds = [],
+      weights
+    } = req.body;
+
+    // Auto-detect strategy if not specified
+    let detectedStrategy = strategy;
+    if (!detectedStrategy) {
+      if (itemId) {
+        detectedStrategy = 'item-based';
+      } else if (itemIds && itemIds.length > 0) {
+        detectedStrategy = itemIds.length === 1 ? 'item-based' : 'multi-item';
+      } else if (query) {
+        detectedStrategy = 'content-based';
+      } else if ((itemIds && itemIds.length > 0) || query) {
+        detectedStrategy = 'hybrid';
+      } else {
+        return res.status(400).json({ 
+          error: 'Must provide itemId, itemIds, or query for recommendations' 
+        });
+      }
+    }
+
+    let result;
+    switch (detectedStrategy) {
+      case 'item-based':
+        if (!itemId && (!itemIds || itemIds.length === 0)) {
+          return res.status(400).json({ error: 'itemId or itemIds required for item-based recommendations' });
+        }
+        const idToUse = itemId || (itemIds && itemIds[0]);
+        result = await recommendationService.getItemBasedRecommendations(
+          idToUse,
+          limit,
+          minSimilarity,
+          excludeIds
+        );
+        break;
+
+      case 'multi-item':
+        if (!itemIds || itemIds.length === 0) {
+          return res.status(400).json({ error: 'itemIds array required for multi-item recommendations' });
+        }
+        result = await recommendationService.getMultiItemRecommendations(
+          itemIds,
+          limit,
+          minSimilarity,
+          excludeIds
+        );
+        break;
+
+      case 'content-based':
+        if (!query || query.trim() === '') {
+          return res.status(400).json({ error: 'query required for content-based recommendations' });
+        }
+        result = await recommendationService.getContentBasedRecommendations(
+          query,
+          limit,
+          minSimilarity,
+          excludeIds
+        );
+        break;
+
+      case 'hybrid':
+        result = await recommendationService.getHybridRecommendations({
+          itemIds: itemIds || (itemId ? [itemId] : []),
+          query,
+          limit,
+          minSimilarity,
+          excludeIds,
+          weights,
+        });
+        break;
+
+      default:
+        return res.status(400).json({ error: `Unknown strategy: ${detectedStrategy}` });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting recommendations:', error);
+    if (error instanceof Error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message.includes('embedding')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to get recommendations' });
+    }
   }
 });
 
