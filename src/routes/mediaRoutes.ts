@@ -3,6 +3,13 @@ import { MediaService } from '../services/mediaService';
 import { MediaType } from '../entities/MediaItem';
 import { upload } from '../middleware/upload';
 import { RecommendationService } from '../services/recommendationService';
+import { 
+  LimitSettings, 
+  SimilaritySettings, 
+  SemanticSearchSettings,
+  RecommendationSettings,
+  SearchSettings
+} from '../config/vectordb.settings';
 import path from 'path';
 
 const router = express.Router();
@@ -148,13 +155,13 @@ router.post('/search', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    console.log(`Search request: query="${query}", limit=${limit || 10}, maxDistance=${maxDistance || 'default'}, metric=${metric || 'cosine'}`);
+    console.log(`Search request: query="${query}", limit=${limit || LimitSettings.DEFAULT_SEARCH_LIMIT}, maxDistance=${maxDistance || 'default'}, metric=${metric || SearchSettings.DEFAULT_METRIC}`);
 
     const results = await mediaService.searchMedia(
       query,
-      limit || 10,
+      limit || LimitSettings.DEFAULT_SEARCH_LIMIT,
       maxDistance,
-      metric || 'cosine'
+      metric || SearchSettings.DEFAULT_METRIC
     );
     
     res.json({
@@ -185,15 +192,15 @@ router.post('/search/semantic', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    console.log(`Semantic search request: query="${query}", limit=${limit || 10}`);
+    console.log(`Semantic search request: query="${query}", limit=${limit || LimitSettings.DEFAULT_SEARCH_LIMIT}`);
 
     const result = await mediaService.semanticSearch(
       query,
-      limit || 10,
+      limit || LimitSettings.DEFAULT_SEARCH_LIMIT,
       {
-        minSimilarity: minSimilarity || 0.3,
-        includeRelated: includeRelated !== false, // Default true
-        contextBoost: contextBoost !== false, // Default true
+        minSimilarity: minSimilarity || SemanticSearchSettings.DEFAULT_MIN_SIMILARITY,
+        includeRelated: includeRelated !== false ? SemanticSearchSettings.DEFAULT_INCLUDE_RELATED : false,
+        contextBoost: contextBoost !== false ? SemanticSearchSettings.DEFAULT_CONTEXT_BOOST : false,
       }
     );
     
@@ -212,9 +219,9 @@ router.post('/search/semantic', async (req: Request, res: Response) => {
 router.get('/:id/similar', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || LimitSettings.DEFAULT_SIMILAR_ITEMS_LIMIT;
     const maxDistance = req.query.maxDistance ? parseFloat(req.query.maxDistance as string) : undefined;
-    const metric = (req.query.metric as 'cosine' | 'l2' | 'inner_product') || 'cosine';
+    const metric = (req.query.metric as 'cosine' | 'l2' | 'inner_product') || SearchSettings.DEFAULT_METRIC;
 
     const results = await mediaService.findSimilarMedia(id, limit, maxDistance, metric);
     
@@ -293,10 +300,10 @@ router.get('/file/:id', async (req: Request, res: Response) => {
 router.get('/recommendations/item/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || RecommendationSettings.DEFAULT_LIMIT;
     const minSimilarity = req.query.minSimilarity 
       ? parseFloat(req.query.minSimilarity as string) 
-      : 0.3;
+      : RecommendationSettings.DEFAULT_MIN_SIMILARITY;
     const excludeIds = req.query.excludeIds 
       ? (req.query.excludeIds as string).split(',').filter(id => id.trim())
       : [];
@@ -332,7 +339,12 @@ router.get('/recommendations/item/:id', async (req: Request, res: Response) => {
  */
 router.post('/recommendations/multi-item', async (req: Request, res: Response) => {
   try {
-    const { itemIds, limit = 10, minSimilarity = 0.3, excludeIds = [] } = req.body;
+    const { 
+      itemIds, 
+      limit = RecommendationSettings.DEFAULT_LIMIT, 
+      minSimilarity = RecommendationSettings.DEFAULT_MIN_SIMILARITY, 
+      excludeIds = [] 
+    } = req.body;
 
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
       return res.status(400).json({ error: 'itemIds array is required' });
@@ -369,7 +381,12 @@ router.post('/recommendations/multi-item', async (req: Request, res: Response) =
  */
 router.post('/recommendations/content-based', async (req: Request, res: Response) => {
   try {
-    const { query, limit = 10, minSimilarity = 0.3, excludeIds = [] } = req.body;
+    const { 
+      query, 
+      limit = RecommendationSettings.DEFAULT_LIMIT, 
+      minSimilarity = RecommendationSettings.DEFAULT_MIN_SIMILARITY, 
+      excludeIds = [] 
+    } = req.body;
 
     if (!query || typeof query !== 'string' || query.trim() === '') {
       return res.status(400).json({ error: 'query is required' });
@@ -410,10 +427,10 @@ router.post('/recommendations/hybrid', async (req: Request, res: Response) => {
     const { 
       itemIds, 
       query, 
-      limit = 10, 
-      minSimilarity = 0.3, 
+      limit = RecommendationSettings.DEFAULT_LIMIT, 
+      minSimilarity = RecommendationSettings.DEFAULT_MIN_SIMILARITY, 
       excludeIds = [],
-      weights
+      weights = RecommendationSettings.HYBRID_WEIGHTS
     } = req.body;
 
     if ((!itemIds || itemIds.length === 0) && (!query || query.trim() === '')) {
@@ -463,10 +480,10 @@ router.post('/recommendations', async (req: Request, res: Response) => {
       itemIds,
       query,
       strategy,
-      limit = 10,
-      minSimilarity = 0.3,
+      limit = RecommendationSettings.DEFAULT_LIMIT,
+      minSimilarity = RecommendationSettings.DEFAULT_MIN_SIMILARITY,
       excludeIds = [],
-      weights
+      weights = RecommendationSettings.HYBRID_WEIGHTS
     } = req.body;
 
     // Auto-detect strategy if not specified

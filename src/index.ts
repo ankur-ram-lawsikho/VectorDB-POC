@@ -3,6 +3,9 @@ import cors from 'cors';
 import { Client } from 'pg';
 import { AppDataSource } from './config/database';
 import mediaRoutes from './routes/mediaRoutes';
+import { MediaItem } from './entities/MediaItem';
+import { generateEmbedding, prepareTextForEmbedding } from './utils/embeddings';
+import { EmbeddingSettings } from './config/vectordb.settings';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -90,6 +93,9 @@ async function startServer() {
       console.log('Vector column setup:', error instanceof Error ? error.message : 'OK');
     }
 
+    // Auto-backfill embeddings for items without embeddings
+    await backfillEmbeddingsOnStartup();
+
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
       console.log(`API endpoints available at http://localhost:${PORT}/api/media`);
@@ -97,6 +103,69 @@ async function startServer() {
   } catch (error) {
     console.error('Error starting server:', error);
     process.exit(1);
+  }
+}
+
+// Auto-backfill embeddings on startup
+async function backfillEmbeddingsOnStartup() {
+  try {
+    const mediaRepository = AppDataSource.getRepository(MediaItem);
+    
+    // Get all items without embeddings
+    const itemsWithoutEmbeddings = await mediaRepository
+      .createQueryBuilder('item')
+      .where('item.embedding IS NULL')
+      .getMany();
+
+    if (itemsWithoutEmbeddings.length === 0) {
+      console.log('✓ All items already have embeddings');
+      return;
+    }
+
+    console.log(`\n🔄 Found ${itemsWithoutEmbeddings.length} items without embeddings. Generating embeddings...`);
+
+    let successCount = 0;
+    let skipCount = 0;
+
+    for (const item of itemsWithoutEmbeddings) {
+      try {
+        // Generate embedding using only title, description, and content
+        const textForEmbedding = prepareTextForEmbedding(
+          item.title,
+          item.description || undefined,
+          item.content || undefined
+        );
+        
+        // Skip if no relevant field
+        if (!textForEmbedding || textForEmbedding.trim() === '') {
+          console.log(`⚠ Skipping "${item.title}" - no text content to embed`);
+          skipCount++;
+          continue;
+        }
+        
+        const embeddingArray = await generateEmbedding(textForEmbedding);
+        const embeddingString = `[${embeddingArray.join(',')}]`;
+
+        // Update the embedding
+        await mediaRepository.query(
+          `UPDATE media_items SET embedding = $1::vector(768) WHERE id = $2`,
+          [embeddingString, item.id]
+        );
+
+        successCount++;
+        console.log(`✓ Generated embedding for: "${item.title}"`);
+        
+        // Small delay to avoid rate limiting (from settings)
+        await new Promise(resolve => setTimeout(resolve, EmbeddingSettings.RATE_LIMIT_DELAY));
+      } catch (error) {
+        console.error(`✗ Error processing "${item.title}":`, error instanceof Error ? error.message : error);
+      }
+    }
+
+    console.log(`\n✅ Embedding backfill complete! Generated: ${successCount}, Skipped: ${skipCount}\n`);
+  } catch (error) {
+    console.error('Error during embedding backfill:', error);
+    // Don't exit - continue with server startup even if backfill fails
   }
 }
 

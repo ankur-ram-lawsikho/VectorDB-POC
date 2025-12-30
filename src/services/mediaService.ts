@@ -2,6 +2,14 @@ import { AppDataSource } from '../config/database';
 import { MediaItem, MediaType } from '../entities/MediaItem';
 import { generateEmbedding, prepareTextForEmbedding } from '../utils/embeddings';
 import { Repository } from 'typeorm';
+import { 
+  LimitSettings, 
+  DistanceSettings, 
+  SimilaritySettings, 
+  SemanticSearchSettings,
+  getMaxDistance,
+  validateLimit
+} from '../config/vectordb.settings';
 
 /**
  * Distance metric types for similarity search
@@ -88,7 +96,7 @@ export class MediaService {
    */
   async searchMedia(
     query: string,
-    limit: number = 10,
+    limit: number = LimitSettings.DEFAULT_SEARCH_LIMIT,
     maxDistance?: number,
     metric: DistanceMetric = 'cosine'
   ): Promise<SimilaritySearchResult[]> {
@@ -96,11 +104,11 @@ export class MediaService {
     const queryEmbedding = await generateEmbedding(query);
     const queryVector = `[${queryEmbedding.join(',')}]`;
 
-    // Set default maxDistance based on metric
-    // For inner product: <#> returns negative inner product, lower = more similar
-    // For normalized embeddings, values typically range from -1 to 1
-    // So we use a threshold around 0.0 to 0.5 (more permissive than cosine)
-    const defaultMaxDistance = metric === 'cosine' ? 0.5 : metric === 'l2' ? 1.0 : 0.5;
+    // Validate and set limit
+    const validatedLimit = validateLimit(limit);
+
+    // Set default maxDistance based on metric using settings
+    const defaultMaxDistance = getMaxDistance(metric);
     const distanceThreshold = maxDistance ?? defaultMaxDistance;
 
     // Choose distance expression based on metric
@@ -156,7 +164,7 @@ export class MediaService {
         ORDER BY (${distanceExpression}) ASC
         LIMIT $2
         `,
-        [queryVector, limit * 2, metric] // Get more results to check distances
+        [queryVector, validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER, metric] // Get more results to check distances
       );
 
       console.log(`Found ${allResults.length} items (before distance filter)`);
@@ -168,7 +176,7 @@ export class MediaService {
       results = allResults.filter((row: { distance: number }) => row.distance <= distanceThreshold);
       
       // Limit to requested number
-      results = results.slice(0, limit);
+      results = results.slice(0, validatedLimit);
 
       console.log(`Returning ${results.length} items (after distance filter)`);
     } catch (error) {
@@ -213,7 +221,7 @@ export class MediaService {
    */
   async findSimilarMedia(
     mediaItemId: string,
-    limit: number = 10,
+    limit: number = LimitSettings.DEFAULT_SIMILAR_ITEMS_LIMIT,
     maxDistance?: number,
     metric: DistanceMetric = 'cosine'
   ): Promise<SimilaritySearchResult[]> {
@@ -228,11 +236,11 @@ export class MediaService {
       throw new Error('Source media item does not have an embedding');
     }
 
-    // Set default maxDistance based on metric
-    // For inner product: <#> returns negative inner product, lower = more similar
-    // For normalized embeddings, values typically range from -1 to 1
-    // So we use a threshold around 0.0 to 0.5 (more permissive than cosine)
-    const defaultMaxDistance = metric === 'cosine' ? 0.5 : metric === 'l2' ? 1.0 : 0.5;
+    // Validate and set limit
+    const validatedLimit = validateLimit(limit);
+
+    // Set default maxDistance based on metric using settings
+    const defaultMaxDistance = getMaxDistance(metric);
     const distanceThreshold = maxDistance ?? defaultMaxDistance;
 
     // Choose distance operator based on metric
@@ -358,7 +366,7 @@ export class MediaService {
    */
   async semanticSearch(
     query: string,
-    limit: number = 10,
+    limit: number = LimitSettings.DEFAULT_SEARCH_LIMIT,
     options: {
       minSimilarity?: number;
       includeRelated?: boolean;
@@ -377,7 +385,14 @@ export class MediaService {
       effectiveMinSimilarity?: number;
     };
   }> {
-    const { minSimilarity = 0.3, includeRelated = true, contextBoost = true } = options;
+    const { 
+      minSimilarity = SemanticSearchSettings.DEFAULT_MIN_SIMILARITY, 
+      includeRelated = SemanticSearchSettings.DEFAULT_INCLUDE_RELATED, 
+      contextBoost = SemanticSearchSettings.DEFAULT_CONTEXT_BOOST 
+    } = options;
+
+    // Validate limit
+    const validatedLimit = validateLimit(limit);
 
     // Enhanced query processing for better semantic understanding
     const enhancedQuery = this.enhanceQueryForSemanticSearch(query);
@@ -408,9 +423,8 @@ export class MediaService {
       };
     }
 
-    // Semantic search with adaptive threshold
-    // Start with a more permissive threshold to capture semantic relationships
-    const adaptiveThreshold = 1.0; // Very permissive for semantic understanding
+    // Semantic search with adaptive threshold from settings
+    const adaptiveThreshold = DistanceSettings.SEMANTIC_SEARCH_ADAPTIVE_THRESHOLD;
 
     let allResults;
     try {
@@ -428,7 +442,7 @@ export class MediaService {
         ORDER BY (${distanceExpression}) ASC
         LIMIT $2
         `,
-        [queryVector, limit * 5] // $1 = query vector, $2 = limit (5x candidates to analyze)
+        [queryVector, validatedLimit * LimitSettings.SEMANTIC_CANDIDATE_MULTIPLIER] // Get more candidates for semantic analysis
       );
 
       console.log(`Semantic search: Found ${allCandidates.length} total candidates for query "${query}"`);
@@ -449,8 +463,8 @@ export class MediaService {
       let filteredResults = allResults.filter((row: { similarity: number }) => row.similarity >= effectiveMinSimilarity);
       
       if (filteredResults.length === 0 && allResults.length > 0) {
-        // Try progressively lower thresholds
-        const thresholds = [0.2, 0.1, 0.05, 0.0];
+        // Try progressively lower thresholds from settings
+        const thresholds = SimilaritySettings.PROGRESSIVE_THRESHOLDS;
         for (const threshold of thresholds) {
           effectiveMinSimilarity = threshold;
           filteredResults = allResults.filter((row: { similarity: number }) => row.similarity >= effectiveMinSimilarity);
@@ -462,14 +476,14 @@ export class MediaService {
         
         // If still no results, return top candidates anyway (even with very low similarity)
         if (filteredResults.length === 0 && allCandidates.length > 0) {
-          console.log(`No results after filtering, returning top ${Math.min(limit, allCandidates.length)} candidates anyway`);
-          filteredResults = allCandidates.slice(0, limit);
+          console.log(`No results after filtering, returning top ${Math.min(validatedLimit, allCandidates.length)} candidates anyway`);
+          filteredResults = allCandidates.slice(0, validatedLimit);
           effectiveMinSimilarity = 0; // Mark that we're showing all results
         }
       }
 
       // Limit results
-      filteredResults = filteredResults.slice(0, limit)
+      filteredResults = filteredResults.slice(0, validatedLimit)
         .map((row: MediaItem & { distance?: number; similarity?: number }) => {
           const item = new MediaItem();
           item.id = row.id;
@@ -490,8 +504,8 @@ export class MediaService {
             ? this.calculateRelevanceScore(item, query, baseSimilarity)
             : baseSimilarity;
 
-          // Determine if it's a strong semantic match
-          const semanticMatch = baseSimilarity >= 0.5;
+          // Determine if it's a strong semantic match using settings
+          const semanticMatch = baseSimilarity >= SimilaritySettings.STRONG_MATCH_THRESHOLD;
 
           return {
             item,
@@ -594,7 +608,7 @@ export class MediaService {
     if (item.title) {
       const titleLower = item.title.toLowerCase();
       if (titleLower.includes(queryLower)) {
-        score += 0.1; // Title match boost
+        score += SemanticSearchSettings.TITLE_MATCH_BOOST;
       }
       // Partial word matches
       const queryWords = queryLower.split(' ');
@@ -603,7 +617,7 @@ export class MediaService {
         titleWords.some(tw => tw.includes(qw) || qw.includes(tw))
       );
       if (matchingWords.length > 0) {
-        score += (matchingWords.length / queryWords.length) * 0.05;
+        score += (matchingWords.length / queryWords.length) * SemanticSearchSettings.PARTIAL_WORD_MATCH_BOOST;
       }
     }
     
@@ -611,7 +625,7 @@ export class MediaService {
     if (item.description) {
       const descLower = item.description.toLowerCase();
       if (descLower.includes(queryLower)) {
-        score += 0.05; // Description match boost
+        score += SemanticSearchSettings.DESCRIPTION_MATCH_BOOST;
       }
     }
     

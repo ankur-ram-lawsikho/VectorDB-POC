@@ -345,6 +345,381 @@
         .message.show {
             display: block;
         }
+
+        .detail-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .detail-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .detail-header h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .detail-body {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .detail-section {
+            margin-bottom: 30px;
+        }
+
+        .detail-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .detail-content {
+            color: #666;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .similar-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .similar-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .similar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .similar-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .similar-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .similarity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .loading-recommendations {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-recommendations {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #e0e0e0;
+        }
+
+        /* Add Media Improvements */
+        .add-form {
+            max-width: 700px;
+            margin: 30px auto;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group .char-count {
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            font-size: 12px;
+            color: #999;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .form-group textarea {
+            padding-bottom: 30px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            background: #f0f4ff;
+            border-color: #764ba2;
+        }
+
+        .file-upload-area.dragover {
+            background: #e8f0fe;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .file-upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .file-upload-text {
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .file-upload-hint {
+            color: #999;
+            font-size: 13px;
+        }
+
+        .file-preview {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            display: none;
+        }
+
+        .file-preview.show {
+            display: block;
+        }
+
+        .file-preview-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .file-preview-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .file-preview-icon {
+            font-size: 2em;
+        }
+
+        .file-preview-info {
+            flex: 1;
+        }
+
+        .file-preview-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .file-preview-size {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .file-preview-remove {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .file-preview-remove:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        .required-badge {
+            color: #f44336;
+            margin-left: 4px;
+        }
+
+        .form-help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 0;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .submit-btn .spinner {
+            display: none;
+            margin-right: 10px;
+        }
+
+        .submit-btn.loading .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .form-success {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            color: #2e7d32;
+            margin-top: 20px;
+        }
+
+        .form-success.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        input:invalid, textarea:invalid {
+            border-color: #f44336;
+        }
+
+        input:valid, textarea:valid {
+            border-color: #4caf50;
+        }
+
+        .media-type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .media-type-card {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .media-type-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .media-type-card.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .media-type-card-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .media-type-card-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -365,86 +740,179 @@
 
             <!-- Add Media Tab -->
             <div id="add-tab" class="tab-content active">
-                <div class="tabs">
-                    <button class="tab active" onclick="switchAddType('text')">Text</button>
-                    <button class="tab" onclick="switchAddType('video')">Video Link</button>
-                    <button class="tab" onclick="switchAddType('audio')">Audio File</button>
-                    <button class="tab" onclick="switchAddType('image')">Image File</button>
+                <div class="media-type-selector">
+                    <div class="media-type-card active" onclick="switchAddType('text')" id="type-text-card">
+                        <div class="media-type-card-icon">📝</div>
+                        <div class="media-type-card-title">Text Content</div>
+                    </div>
+                    <div class="media-type-card" onclick="switchAddType('video')" id="type-video-card">
+                        <div class="media-type-card-icon">🎥</div>
+                        <div class="media-type-card-title">Video Link</div>
+                    </div>
+                    <div class="media-type-card" onclick="switchAddType('audio')" id="type-audio-card">
+                        <div class="media-type-card-icon">🎵</div>
+                        <div class="media-type-card-title">Audio File</div>
+                    </div>
+                    <div class="media-type-card" onclick="switchAddType('image')" id="type-image-card">
+                        <div class="media-type-card-icon">🖼️</div>
+                        <div class="media-type-card-title">Image File</div>
+                    </div>
                 </div>
 
                 <!-- Text Form -->
                 <div id="text-form" class="add-form">
-                    <form onsubmit="addTextMedia(event)">
+                    <div class="form-header">
+                        <div class="form-icon">📝</div>
+                        <h2>Add Text Content</h2>
+                        <p>Create a new text document with title, content, and description</p>
+                    </div>
+                    <form onsubmit="addTextMedia(event)" id="text-form-element">
                         <div class="form-group">
-                            <label>Title *</label>
-                            <input type="text" id="text-title" required>
+                            <label>Title <span class="required-badge">*</span></label>
+                            <input type="text" id="text-title" required maxlength="255" placeholder="Enter a descriptive title">
+                            <p class="form-help-text">A clear, descriptive title helps with search and recommendations</p>
+                            <span class="char-count"><span id="text-title-count">0</span>/255</span>
                         </div>
                         <div class="form-group">
-                            <label>Content *</label>
-                            <textarea id="text-content" required></textarea>
+                            <label>Content <span class="required-badge">*</span></label>
+                            <textarea id="text-content" required maxlength="10000" placeholder="Enter your text content here..." rows="8"></textarea>
+                            <p class="form-help-text">The main content that will be used for semantic search and embeddings</p>
+                            <span class="char-count"><span id="text-content-count">0</span>/10000</span>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <textarea id="text-description"></textarea>
+                            <textarea id="text-description" maxlength="500" placeholder="Optional: Add a brief description" rows="3"></textarea>
+                            <p class="form-help-text">A short description helps users understand what this content is about</p>
+                            <span class="char-count"><span id="text-description-count">0</span>/500</span>
                         </div>
-                        <button type="submit">Add Text</button>
+                        <button type="submit" class="submit-btn" id="text-submit-btn">
+                            <span class="spinner">⏳</span>
+                            <span>Add Text Content</span>
+                        </button>
+                        <div class="form-success" id="text-success">
+                            ✅ Text content added successfully! Embedding is being generated...
+                        </div>
                     </form>
                 </div>
 
                 <!-- Video Form -->
                 <div id="video-form" class="add-form" style="display: none;">
-                    <form onsubmit="addVideoMedia(event)">
+                    <div class="form-header">
+                        <div class="form-icon">🎥</div>
+                        <h2>Add Video Link</h2>
+                        <p>Add a video by providing a URL (YouTube, Vimeo, etc.)</p>
+                    </div>
+                    <form onsubmit="addVideoMedia(event)" id="video-form-element">
                         <div class="form-group">
-                            <label>Title *</label>
-                            <input type="text" id="video-title" required>
+                            <label>Title <span class="required-badge">*</span></label>
+                            <input type="text" id="video-title" required maxlength="255" placeholder="Enter video title">
+                            <p class="form-help-text">The title of the video</p>
+                            <span class="char-count"><span id="video-title-count">0</span>/255</span>
                         </div>
                         <div class="form-group">
-                            <label>Video URL *</label>
-                            <input type="url" id="video-url" required>
+                            <label>Video URL <span class="required-badge">*</span></label>
+                            <input type="url" id="video-url" required placeholder="https://www.youtube.com/watch?v=...">
+                            <p class="form-help-text">Paste the full URL of the video</p>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <textarea id="video-description"></textarea>
+                            <textarea id="video-description" maxlength="500" placeholder="Optional: Describe what this video is about" rows="3"></textarea>
+                            <p class="form-help-text">Description helps with search and recommendations</p>
+                            <span class="char-count"><span id="video-description-count">0</span>/500</span>
                         </div>
-                        <button type="submit">Add Video</button>
+                        <button type="submit" class="submit-btn" id="video-submit-btn">
+                            <span class="spinner">⏳</span>
+                            <span>Add Video</span>
+                        </button>
+                        <div class="form-success" id="video-success">
+                            ✅ Video link added successfully! Embedding is being generated...
+                        </div>
                     </form>
                 </div>
 
                 <!-- Audio Form -->
                 <div id="audio-form" class="add-form" style="display: none;">
-                    <form onsubmit="addAudioMedia(event)">
+                    <div class="form-header">
+                        <div class="form-icon">🎵</div>
+                        <h2>Upload Audio File</h2>
+                        <p>Upload an audio file (MP3, WAV, OGG, etc.)</p>
+                    </div>
+                    <form onsubmit="addAudioMedia(event)" id="audio-form-element">
                         <div class="form-group">
-                            <label>Title *</label>
-                            <input type="text" id="audio-title" required>
+                            <label>Title <span class="required-badge">*</span></label>
+                            <input type="text" id="audio-title" required maxlength="255" placeholder="Enter audio title">
+                            <p class="form-help-text">Name your audio file</p>
+                            <span class="char-count"><span id="audio-title-count">0</span>/255</span>
                         </div>
                         <div class="form-group">
-                            <label>Audio File *</label>
-                            <input type="file" id="audio-file" accept="audio/*" required>
+                            <label>Audio File <span class="required-badge">*</span></label>
+                            <div class="file-upload-area" onclick="document.getElementById('audio-file').click()" 
+                                 ondrop="handleFileDrop(event, 'audio')" 
+                                 ondragover="event.preventDefault(); event.currentTarget.classList.add('dragover')"
+                                 ondragleave="event.currentTarget.classList.remove('dragover')">
+                                <div class="file-upload-icon">🎵</div>
+                                <div class="file-upload-text">Click to select or drag & drop audio file</div>
+                                <div class="file-upload-hint">Supports: MP3, WAV, OGG, M4A</div>
+                            </div>
+                            <input type="file" id="audio-file" accept="audio/*" required style="display: none;" onchange="handleFileSelect(event, 'audio')">
+                            <div class="file-preview" id="audio-preview"></div>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <textarea id="audio-description"></textarea>
+                            <textarea id="audio-description" maxlength="500" placeholder="Optional: Describe the audio content" rows="3"></textarea>
+                            <p class="form-help-text">Description helps with search and recommendations</p>
+                            <span class="char-count"><span id="audio-description-count">0</span>/500</span>
                         </div>
-                        <button type="submit">Upload Audio</button>
+                        <button type="submit" class="submit-btn" id="audio-submit-btn">
+                            <span class="spinner">⏳</span>
+                            <span>Upload Audio</span>
+                        </button>
+                        <div class="form-success" id="audio-success">
+                            ✅ Audio file uploaded successfully! Embedding is being generated...
+                        </div>
                     </form>
                 </div>
 
                 <!-- Image Form -->
                 <div id="image-form" class="add-form" style="display: none;">
-                    <form onsubmit="addImageMedia(event)">
+                    <div class="form-header">
+                        <div class="form-icon">🖼️</div>
+                        <h2>Upload Image File</h2>
+                        <p>Upload an image file (JPG, PNG, GIF, etc.)</p>
+                    </div>
+                    <form onsubmit="addImageMedia(event)" id="image-form-element">
                         <div class="form-group">
-                            <label>Title *</label>
-                            <input type="text" id="image-title" required>
+                            <label>Title <span class="required-badge">*</span></label>
+                            <input type="text" id="image-title" required maxlength="255" placeholder="Enter image title">
+                            <p class="form-help-text">Name your image</p>
+                            <span class="char-count"><span id="image-title-count">0</span>/255</span>
                         </div>
                         <div class="form-group">
-                            <label>Image File *</label>
-                            <input type="file" id="image-file" accept="image/*" required>
+                            <label>Image File <span class="required-badge">*</span></label>
+                            <div class="file-upload-area" onclick="document.getElementById('image-file').click()"
+                                 ondrop="handleFileDrop(event, 'image')"
+                                 ondragover="event.preventDefault(); event.currentTarget.classList.add('dragover')"
+                                 ondragleave="event.currentTarget.classList.remove('dragover')">
+                                <div class="file-upload-icon">🖼️</div>
+                                <div class="file-upload-text">Click to select or drag & drop image file</div>
+                                <div class="file-upload-hint">Supports: JPG, PNG, GIF, WEBP</div>
+                            </div>
+                            <input type="file" id="image-file" accept="image/*" required style="display: none;" onchange="handleFileSelect(event, 'image')">
+                            <div class="file-preview" id="image-preview"></div>
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <textarea id="image-description"></textarea>
+                            <textarea id="image-description" maxlength="500" placeholder="Optional: Describe the image" rows="3"></textarea>
+                            <p class="form-help-text">Description helps with search and recommendations</p>
+                            <span class="char-count"><span id="image-description-count">0</span>/500</span>
                         </div>
-                        <button type="submit">Upload Image</button>
+                        <button type="submit" class="submit-btn" id="image-submit-btn">
+                            <span class="spinner">⏳</span>
+                            <span>Upload Image</span>
+                        </button>
+                        <div class="form-success" id="image-success">
+                            ✅ Image file uploaded successfully! Embedding is being generated...
+                        </div>
                     </form>
                 </div>
             </div>
@@ -611,6 +1079,12 @@
                 <button onclick="loadAllMedia()" style="margin-bottom: 20px;">Refresh</button>
                 <div id="browse-results" class="media-grid"></div>
             </div>
+
+            <!-- Media Detail Tab -->
+            <div id="detail-tab" class="tab-content">
+                <button onclick="goBackToList()" style="margin-bottom: 20px; background: #666;">← Back</button>
+                <div id="media-detail-content"></div>
+            </div>
         </div>
     </div>
 
@@ -630,18 +1104,34 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             
-            if (event && event.target) {
-                event.target.classList.add('active');
-            } else {
-                // Find the tab button and activate it
-                const tabs = document.querySelectorAll('.tab');
-                tabs.forEach(t => {
-                    if (t.textContent.toLowerCase().includes(tab)) {
-                        t.classList.add('active');
-                    }
-                });
+            // Track last active tab (except for detail view)
+            if (tab !== 'detail') {
+                localStorage.setItem('lastActiveTab', tab);
             }
-            document.getElementById(`${tab}-tab`).classList.add('active');
+            
+            // Hide/show main tabs based on view
+            const mainTabs = document.getElementById('main-tabs');
+            if (tab === 'detail') {
+                if (mainTabs) mainTabs.style.display = 'none';
+            } else {
+                if (mainTabs) mainTabs.style.display = 'flex';
+                if (event && event.target) {
+                    event.target.classList.add('active');
+                } else {
+                    // Find the tab button and activate it
+                    const tabs = document.querySelectorAll('.tab');
+                    tabs.forEach(t => {
+                        if (t.textContent.toLowerCase().includes(tab)) {
+                            t.classList.add('active');
+                        }
+                    });
+                }
+            }
+            
+            const tabElement = document.getElementById(`${tab}-tab`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
             
             if (tab === 'browse') {
                 loadAllMedia();
@@ -652,12 +1142,149 @@
             document.querySelectorAll('.add-form').forEach(f => f.style.display = 'none');
             document.getElementById(`${type}-form`).style.display = 'block';
             
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            // Update media type cards
+            document.querySelectorAll('.media-type-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`type-${type}-card`).classList.add('active');
+            
+            // Reset forms
+            resetForm(type);
+        }
+
+        function resetForm(type) {
+            const form = document.getElementById(`${type}-form-element`);
+            if (form) {
+                form.reset();
+                updateCharCounts(type);
+                hideSuccess(type);
+                hideFilePreview(type);
+            }
+        }
+
+        function updateCharCounts(type) {
+            const fields = {
+                text: ['text-title', 'text-content', 'text-description'],
+                video: ['video-title', 'video-description'],
+                audio: ['audio-title', 'audio-description'],
+                image: ['image-title', 'image-description']
+            };
+
+            const limits = {
+                'text-title': 255,
+                'text-content': 10000,
+                'text-description': 500,
+                'video-title': 255,
+                'video-description': 500,
+                'audio-title': 255,
+                'audio-description': 500,
+                'image-title': 255,
+                'image-description': 500
+            };
+
+            fields[type]?.forEach(fieldId => {
+                const input = document.getElementById(fieldId);
+                const counter = document.getElementById(`${fieldId}-count`);
+                if (input && counter) {
+                    const updateCount = () => {
+                        counter.textContent = input.value.length;
+                        if (input.value.length > limits[fieldId] * 0.9) {
+                            counter.style.color = '#f44336';
+                        } else {
+                            counter.style.color = '#999';
+                        }
+                    };
+                    input.addEventListener('input', updateCount);
+                    updateCount();
+                }
+            });
+        }
+
+        function handleFileSelect(event, type) {
+            const file = event.target.files[0];
+            if (file) {
+                showFilePreview(file, type);
+            }
+        }
+
+        function handleFileDrop(event, type) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                const input = document.getElementById(`${type}-file`);
+                if (input) {
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    input.files = dataTransfer.files;
+                    showFilePreview(file, type);
+                }
+            }
+        }
+
+        function showFilePreview(file, type) {
+            const preview = document.getElementById(`${type}-preview`);
+            if (!preview) return;
+
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            const fileIcon = type === 'image' ? '🖼️' : '🎵';
+            
+            preview.innerHTML = `
+                <div class="file-preview-item">
+                    <div class="file-preview-icon">${fileIcon}</div>
+                    <div class="file-preview-info">
+                        <div class="file-preview-name">${file.name}</div>
+                        <div class="file-preview-size">${fileSize} MB</div>
+                    </div>
+                    <button type="button" class="file-preview-remove" onclick="removeFilePreview('${type}')">×</button>
+                </div>
+            `;
+            preview.classList.add('show');
+        }
+
+        function removeFilePreview(type) {
+            const preview = document.getElementById(`${type}-preview`);
+            const input = document.getElementById(`${type}-file`);
+            if (preview) preview.classList.remove('show');
+            if (input) input.value = '';
+        }
+
+        function hideFilePreview(type) {
+            const preview = document.getElementById(`${type}-preview`);
+            if (preview) preview.classList.remove('show');
+        }
+
+        function showSuccess(type) {
+            const success = document.getElementById(`${type}-success`);
+            if (success) {
+                success.classList.add('show');
+                setTimeout(() => {
+                    success.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function hideSuccess(type) {
+            const success = document.getElementById(`${type}-success`);
+            if (success) success.classList.remove('show');
+        }
+
+        function setLoading(type, loading) {
+            const btn = document.getElementById(`${type}-submit-btn`);
+            if (btn) {
+                if (loading) {
+                    btn.classList.add('loading');
+                    btn.disabled = true;
+                } else {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }
+            }
         }
 
         async function addTextMedia(e) {
             e.preventDefault();
+            setLoading('text', true);
+            hideSuccess('text');
+            
             try {
                 const response = await fetch(`${API_BASE}/text`, {
                     method: 'POST',
@@ -670,18 +1297,28 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    showMessage('Text added successfully!', 'success');
-                    e.target.reset();
+                    showMessage('Text added successfully! Embedding is being generated...', 'success');
+                    showSuccess('text');
+                    setTimeout(() => {
+                        e.target.reset();
+                        updateCharCounts('text');
+                        hideSuccess('text');
+                    }, 3000);
                 } else {
                     showMessage(data.error || 'Failed to add text', 'error');
                 }
             } catch (error) {
                 showMessage('Error: ' + error.message, 'error');
+            } finally {
+                setLoading('text', false);
             }
         }
 
         async function addVideoMedia(e) {
             e.preventDefault();
+            setLoading('video', true);
+            hideSuccess('video');
+            
             try {
                 const response = await fetch(`${API_BASE}/video`, {
                     method: 'POST',
@@ -694,18 +1331,28 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    showMessage('Video link added successfully!', 'success');
-                    e.target.reset();
+                    showMessage('Video link added successfully! Embedding is being generated...', 'success');
+                    showSuccess('video');
+                    setTimeout(() => {
+                        e.target.reset();
+                        updateCharCounts('video');
+                        hideSuccess('video');
+                    }, 3000);
                 } else {
                     showMessage(data.error || 'Failed to add video', 'error');
                 }
             } catch (error) {
                 showMessage('Error: ' + error.message, 'error');
+            } finally {
+                setLoading('video', false);
             }
         }
 
         async function addAudioMedia(e) {
             e.preventDefault();
+            setLoading('audio', true);
+            hideSuccess('audio');
+            
             const formData = new FormData();
             formData.append('audio', document.getElementById('audio-file').files[0]);
             formData.append('title', document.getElementById('audio-title').value);
@@ -718,18 +1365,29 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    showMessage('Audio uploaded successfully!', 'success');
-                    e.target.reset();
+                    showMessage('Audio uploaded successfully! Embedding is being generated...', 'success');
+                    showSuccess('audio');
+                    setTimeout(() => {
+                        e.target.reset();
+                        updateCharCounts('audio');
+                        hideFilePreview('audio');
+                        hideSuccess('audio');
+                    }, 3000);
                 } else {
                     showMessage(data.error || 'Failed to upload audio', 'error');
                 }
             } catch (error) {
                 showMessage('Error: ' + error.message, 'error');
+            } finally {
+                setLoading('audio', false);
             }
         }
 
         async function addImageMedia(e) {
             e.preventDefault();
+            setLoading('image', true);
+            hideSuccess('image');
+            
             const formData = new FormData();
             formData.append('image', document.getElementById('image-file').files[0]);
             formData.append('title', document.getElementById('image-title').value);
@@ -742,13 +1400,21 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    showMessage('Image uploaded successfully!', 'success');
-                    e.target.reset();
+                    showMessage('Image uploaded successfully! Embedding is being generated...', 'success');
+                    showSuccess('image');
+                    setTimeout(() => {
+                        e.target.reset();
+                        updateCharCounts('image');
+                        hideFilePreview('image');
+                        hideSuccess('image');
+                    }, 3000);
                 } else {
                     showMessage(data.error || 'Failed to upload image', 'error');
                 }
             } catch (error) {
                 showMessage('Error: ' + error.message, 'error');
+            } finally {
+                setLoading('image', false);
             }
         }
 
@@ -990,7 +1656,7 @@
                     ${result.item.url ? `<a href="${result.item.url}" target="_blank" class="media-url">${result.item.url}</a>` : ''}
                     ${result.item.filePath ? `<a href="${API_BASE}/file/${result.item.id}" target="_blank" class="media-url">View File</a>` : ''}
                     <div style="margin-top: 10px; display: flex; gap: 10px;">
-                        <button style="background: #4caf50; padding: 8px 16px; font-size: 14px;" onclick="findSimilarMedia('${result.item.id}')">Find Similar</button>
+                        <button style="background: #667eea; padding: 8px 16px; font-size: 14px;" onclick="viewMediaDetail('${result.item.id}')">View Details</button>
                         <button class="delete-btn" onclick="deleteMedia('${result.item.id}')">Delete</button>
                     </div>
                 </div>
@@ -1126,28 +1792,154 @@
             }
         }
 
-        async function findSimilarMedia(id) {
+        async function viewMediaDetail(id) {
             try {
-                const response = await fetch(`${API_BASE}/${id}/similar?limit=10&metric=cosine`);
-                const data = await response.json();
-                if (response.ok) {
-                    const items = data.results || [];
-                    if (items.length === 0) {
-                        showMessage('No similar items found', 'error');
-                        return;
-                    }
-                    // Switch to search tab and display results
-                    switchTab('search');
-                    document.getElementById('search-query').value = `Similar to: ${data.sourceId}`;
-                    displayMedia(items, 'search-results', true);
-                    showMessage(`Found ${data.count} similar item(s)`, 'success');
-                } else {
-                    showMessage(data.error || 'Failed to find similar items', 'error');
+                // Fetch media item details
+                const response = await fetch(`${API_BASE}/${id}`);
+                const item = await response.json();
+                
+                if (!response.ok) {
+                    showMessage(item.error || 'Failed to load media details', 'error');
+                    return;
                 }
+
+                // Switch to detail tab
+                switchTab('detail');
+                
+                // Display media details
+                displayMediaDetail(item);
+                
+                // Load recommendations
+                loadRecommendations(id);
             } catch (error) {
                 showMessage('Error: ' + error.message, 'error');
             }
         }
+
+        function displayMediaDetail(item) {
+            const container = document.getElementById('media-detail-content');
+            
+            const detailHtml = `
+                <div class="detail-container">
+                    <div class="detail-header">
+                        <span class="media-type ${item.type}" style="background: rgba(255,255,255,0.2); color: white; margin-bottom: 15px;">${item.type.toUpperCase()}</span>
+                        <h2>${item.title}</h2>
+                        ${item.description ? `<p style="font-size: 1.1em; opacity: 0.9; margin-top: 10px;">${item.description}</p>` : ''}
+                    </div>
+
+                    <div class="detail-body">
+                        ${item.content ? `
+                            <div class="detail-section">
+                                <h3>Content</h3>
+                                <div class="detail-content">${item.content}</div>
+                            </div>
+                        ` : ''}
+
+                        ${item.url ? `
+                            <div class="detail-section">
+                                <h3>Link</h3>
+                                <a href="${item.url}" target="_blank" class="media-url" style="font-size: 16px;">${item.url}</a>
+                            </div>
+                        ` : ''}
+
+                        ${item.filePath ? `
+                            <div class="detail-section">
+                                <h3>File</h3>
+                                <a href="${API_BASE}/file/${item.id}" target="_blank" class="media-url" style="font-size: 16px;">View File</a>
+                            </div>
+                        ` : ''}
+
+                        <div class="detail-section">
+                            <h3>Metadata</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; color: #666;">
+                                <div>
+                                    <strong>Type:</strong> ${item.type}
+                                </div>
+                                <div>
+                                    <strong>Created:</strong> ${new Date(item.createdAt).toLocaleDateString()}
+                                </div>
+                                <div>
+                                    <strong>Updated:</strong> ${new Date(item.updatedAt).toLocaleDateString()}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                            <button class="delete-btn" onclick="deleteMedia('${item.id}')">Delete Item</button>
+                        </div>
+                    </div>
+
+                    <!-- Similar Items Section -->
+                    <div class="similar-section">
+                        <h3>🔗 Similar to This</h3>
+                        <div id="recommendations-container">
+                            <div class="loading-recommendations">
+                                <div>Loading recommendations...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = detailHtml;
+        }
+
+        async function loadRecommendations(itemId) {
+            const container = document.getElementById('recommendations-container');
+            
+            try {
+                // Use the recommendation API endpoint with detail page limit
+                // Using DETAIL_PAGE_LIMIT (6) from settings, but keeping default minSimilarity (0.5)
+                const response = await fetch(`${API_BASE}/recommendations/item/${itemId}?limit=6`);
+                const data = await response.json();
+                
+                if (response.ok && data.recommendations && data.recommendations.length > 0) {
+                    const recommendationsHtml = `
+                        <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 6px; font-size: 14px; color: #666;">
+                            Found <strong>${data.recommendations.length}</strong> similar items 
+                            (Average similarity: <strong>${(data.metadata.averageSimilarity * 100).toFixed(1)}%</strong>)
+                        </div>
+                        <div class="similar-grid">
+                            ${data.recommendations.map(rec => `
+                                <div class="similar-card" onclick="viewMediaDetail('${rec.item.id}')">
+                                    <span class="media-type ${rec.item.type}">${rec.item.type.toUpperCase()}</span>
+                                    <h4 style="margin: 10px 0; color: #333;">${rec.item.title}</h4>
+                                    ${rec.item.description ? `<p style="color: #666; font-size: 14px; margin-bottom: 10px;">${rec.item.description.substring(0, 100)}${rec.item.description.length > 100 ? '...' : ''}</p>` : ''}
+                                    <span class="similarity-badge">
+                                        ${(rec.similarity * 100).toFixed(1)}% similar
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    container.innerHTML = recommendationsHtml;
+                } else {
+                    container.innerHTML = `
+                        <div class="no-recommendations">
+                            <p>No similar items found.</p>
+                            <p style="font-size: 14px; margin-top: 10px; color: #999;">
+                                ${data.metadata && data.metadata.totalCandidates === 0 
+                                    ? 'No items with embeddings found in database.' 
+                                    : 'Try lowering the similarity threshold or add more related content.'}
+                            </p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="no-recommendations">
+                        <p>Error loading recommendations: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function goBackToList() {
+            // Go back to the last active tab (browse or search)
+            const lastTab = localStorage.getItem('lastActiveTab') || 'browse';
+            switchTab(lastTab);
+        }
+
 
         async function loadAllMedia() {
             try {
@@ -1188,7 +1980,7 @@
                     ${item.url ? `<a href="${item.url}" target="_blank" class="media-url">${item.url}</a>` : ''}
                     ${item.filePath ? `<a href="${API_BASE}/file/${item.id}" target="_blank" class="media-url">View File</a>` : ''}
                     <div style="margin-top: 10px; display: flex; gap: 10px;">
-                        <button style="background: #4caf50; padding: 8px 16px; font-size: 14px;" onclick="findSimilarMedia('${item.id}')">Find Similar</button>
+                        <button style="background: #667eea; padding: 8px 16px; font-size: 14px;" onclick="viewMediaDetail('${item.id}')">View Details</button>
                         <button class="delete-btn" onclick="deleteMedia('${item.id}')">Delete</button>
                     </div>
                 </div>
@@ -1205,7 +1997,13 @@
                 });
                 if (response.ok) {
                     showMessage('Media deleted successfully', 'success');
-                    loadAllMedia();
+                    // If we're on detail page, go back to list
+                    const detailTab = document.getElementById('detail-tab');
+                    if (detailTab && detailTab.classList.contains('active')) {
+                        goBackToList();
+                    } else {
+                        loadAllMedia();
+                    }
                 } else {
                     showMessage('Failed to delete media', 'error');
                 }
@@ -1217,8 +2015,14 @@
         // Load all media on page load
         window.addEventListener('DOMContentLoaded', () => {
             loadAllMedia();
+            // Initialize character counters
+            updateCharCounts('text');
+            updateCharCounts('video');
+            updateCharCounts('audio');
+            updateCharCounts('image');
         });
     </script>
 </body>
 </html>
+
 

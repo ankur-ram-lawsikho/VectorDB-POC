@@ -3,6 +3,13 @@ import { MediaItem } from '../entities/MediaItem';
 import { MediaService, SimilaritySearchResult } from './mediaService';
 import { generateEmbedding } from '../utils/embeddings';
 import { Repository, In } from 'typeorm';
+import {
+  RecommendationSettings,
+  LimitSettings,
+  SimilaritySettings,
+  validateLimit,
+  validateSimilarity
+} from '../config/vectordb.settings';
 
 /**
  * Recommendation strategies
@@ -65,8 +72,8 @@ export class RecommendationService {
    */
   async getItemBasedRecommendations(
     itemId: string,
-    limit: number = 10,
-    minSimilarity: number = 0.3,
+    limit: number = RecommendationSettings.DEFAULT_LIMIT,
+    minSimilarity: number = RecommendationSettings.DEFAULT_MIN_SIMILARITY,
     excludeIds: string[] = []
   ): Promise<RecommendationResponse> {
     // Get the source item
@@ -80,20 +87,24 @@ export class RecommendationService {
       throw new Error('Source item does not have an embedding');
     }
 
+    // Validate inputs
+    const validatedLimit = validateLimit(limit);
+    const validatedMinSimilarity = validateSimilarity(minSimilarity);
+
     // Use existing findSimilarMedia method
     const excludeList = [itemId, ...excludeIds];
     const allResults = await this.findSimilarItems(
       sourceItem.embedding,
-      limit * 2, // Get more candidates for filtering
+      validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER, // Get more candidates for filtering
       excludeList
     );
 
     // Filter by similarity threshold
-    let filteredResults = allResults.filter(r => r.similarity >= minSimilarity);
+    let filteredResults = allResults.filter(r => r.similarity >= validatedMinSimilarity);
 
     // If not enough results, lower threshold progressively
-    if (filteredResults.length < limit && allResults.length > 0) {
-      const thresholds = [0.2, 0.1, 0.05, 0.0];
+    if (filteredResults.length < validatedLimit && allResults.length > 0) {
+      const thresholds = RecommendationSettings.PROGRESSIVE_THRESHOLDS;
       for (const threshold of thresholds) {
         filteredResults = allResults.filter(r => r.similarity >= threshold);
         if (filteredResults.length >= limit) break;
@@ -138,8 +149,8 @@ export class RecommendationService {
    */
   async getMultiItemRecommendations(
     itemIds: string[],
-    limit: number = 10,
-    minSimilarity: number = 0.3,
+    limit: number = RecommendationSettings.DEFAULT_LIMIT,
+    minSimilarity: number = RecommendationSettings.DEFAULT_MIN_SIMILARITY,
     excludeIds: string[] = []
   ): Promise<RecommendationResponse> {
     if (itemIds.length === 0) {
@@ -165,28 +176,32 @@ export class RecommendationService {
     // Calculate average embedding from all source items
     const avgEmbedding = this.calculateAverageEmbedding(itemsWithEmbeddings);
 
+    // Validate inputs
+    const validatedLimit = validateLimit(limit);
+    const validatedMinSimilarity = validateSimilarity(minSimilarity);
+
     // Find similar items
     const excludeList = [...itemIds, ...excludeIds];
     const allResults = await this.findSimilarItems(
       avgEmbedding,
-      limit * 2,
+      validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER,
       excludeList
     );
 
     // Filter by similarity threshold
-    let filteredResults = allResults.filter(r => r.similarity >= minSimilarity);
+    let filteredResults = allResults.filter(r => r.similarity >= validatedMinSimilarity);
 
     // If not enough results, lower threshold progressively
-    if (filteredResults.length < limit && allResults.length > 0) {
-      const thresholds = [0.2, 0.1, 0.05, 0.0];
+    if (filteredResults.length < validatedLimit && allResults.length > 0) {
+      const thresholds = RecommendationSettings.PROGRESSIVE_THRESHOLDS;
       for (const threshold of thresholds) {
         filteredResults = allResults.filter(r => r.similarity >= threshold);
-        if (filteredResults.length >= limit) break;
+        if (filteredResults.length >= validatedLimit) break;
       }
     }
 
     // Limit results
-    filteredResults = filteredResults.slice(0, limit);
+    filteredResults = filteredResults.slice(0, validatedLimit);
 
     // Calculate metadata
     const similarities = filteredResults.map(r => r.similarity);
@@ -229,8 +244,8 @@ export class RecommendationService {
    */
   async getContentBasedRecommendations(
     query: string,
-    limit: number = 10,
-    minSimilarity: number = 0.3,
+    limit: number = RecommendationSettings.DEFAULT_LIMIT,
+    minSimilarity: number = RecommendationSettings.DEFAULT_MIN_SIMILARITY,
     excludeIds: string[] = []
   ): Promise<RecommendationResponse> {
     if (!query || query.trim() === '') {
@@ -241,27 +256,31 @@ export class RecommendationService {
     const queryEmbedding = await generateEmbedding(query);
     const queryVector = `[${queryEmbedding.join(',')}]`;
 
+    // Validate inputs
+    const validatedLimit = validateLimit(limit);
+    const validatedMinSimilarity = validateSimilarity(minSimilarity);
+
     // Find similar items
     const allResults = await this.findSimilarItems(
       queryVector,
-      limit * 2,
+      validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER,
       excludeIds
     );
 
     // Filter by similarity threshold
-    let filteredResults = allResults.filter(r => r.similarity >= minSimilarity);
+    let filteredResults = allResults.filter(r => r.similarity >= validatedMinSimilarity);
 
     // If not enough results, lower threshold progressively
-    if (filteredResults.length < limit && allResults.length > 0) {
-      const thresholds = [0.2, 0.1, 0.05, 0.0];
+    if (filteredResults.length < validatedLimit && allResults.length > 0) {
+      const thresholds = RecommendationSettings.PROGRESSIVE_THRESHOLDS;
       for (const threshold of thresholds) {
         filteredResults = allResults.filter(r => r.similarity >= threshold);
-        if (filteredResults.length >= limit) break;
+        if (filteredResults.length >= validatedLimit) break;
       }
     }
 
     // Limit results
-    filteredResults = filteredResults.slice(0, limit);
+    filteredResults = filteredResults.slice(0, validatedLimit);
 
     // Calculate metadata
     const similarities = filteredResults.map(r => r.similarity);
@@ -302,16 +321,22 @@ export class RecommendationService {
     weights?: {
       itemBased?: number;
       contentBased?: number;
+      ITEM_BASED?: number;
+      CONTENT_BASED?: number;
     };
   }): Promise<RecommendationResponse> {
     const {
       itemIds = [],
       query,
-      limit = 10,
-      minSimilarity = 0.3,
+      limit = RecommendationSettings.DEFAULT_LIMIT,
+      minSimilarity = RecommendationSettings.DEFAULT_MIN_SIMILARITY,
       excludeIds = [],
-      weights = { itemBased: 0.5, contentBased: 0.5 },
+      weights = RecommendationSettings.HYBRID_WEIGHTS,
     } = options;
+
+    // Validate inputs
+    const validatedLimit = validateLimit(limit);
+    const validatedMinSimilarity = validateSimilarity(minSimilarity);
 
     if (itemIds.length === 0 && !query) {
       throw new Error('Either itemIds or query must be provided for hybrid recommendations');
@@ -323,21 +348,25 @@ export class RecommendationService {
     if (itemIds.length > 0) {
       try {
         const itemBased = itemIds.length === 1
-          ? await this.getItemBasedRecommendations(itemIds[0], limit * 2, minSimilarity, excludeIds)
-          : await this.getMultiItemRecommendations(itemIds, limit * 2, minSimilarity, excludeIds);
+          ? await this.getItemBasedRecommendations(itemIds[0], validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER, validatedMinSimilarity, excludeIds)
+          : await this.getMultiItemRecommendations(itemIds, validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER, validatedMinSimilarity, excludeIds);
 
         itemBased.recommendations.forEach(rec => {
           const existing = allRecommendations.get(rec.item.id);
+          // Handle both camelCase and UPPER_CASE property names
+          const itemWeight = 'itemBased' in weights 
+            ? weights.itemBased! 
+            : ('ITEM_BASED' in weights ? (weights as any).ITEM_BASED : RecommendationSettings.HYBRID_WEIGHTS.ITEM_BASED);
           if (existing) {
             // Combine scores
             existing.recommendationScore = 
-              existing.recommendationScore * weights.itemBased! + 
-              rec.recommendationScore * weights.itemBased!;
+              existing.recommendationScore + 
+              rec.recommendationScore * itemWeight;
             existing.reason = `${existing.reason}; ${rec.reason}`;
           } else {
             allRecommendations.set(rec.item.id, {
               ...rec,
-              recommendationScore: rec.recommendationScore * weights.itemBased!,
+              recommendationScore: rec.recommendationScore * itemWeight,
             });
           }
         });
@@ -351,23 +380,27 @@ export class RecommendationService {
       try {
         const contentBased = await this.getContentBasedRecommendations(
           query,
-          limit * 2,
-          minSimilarity,
+          validatedLimit * LimitSettings.CANDIDATE_MULTIPLIER,
+          validatedMinSimilarity,
           excludeIds
         );
 
         contentBased.recommendations.forEach(rec => {
           const existing = allRecommendations.get(rec.item.id);
+          // Handle both camelCase and UPPER_CASE property names
+          const contentWeight = 'contentBased' in weights 
+            ? weights.contentBased! 
+            : ('CONTENT_BASED' in weights ? (weights as any).CONTENT_BASED : RecommendationSettings.HYBRID_WEIGHTS.CONTENT_BASED);
           if (existing) {
             // Combine scores
             existing.recommendationScore = 
               existing.recommendationScore + 
-              rec.recommendationScore * weights.contentBased!;
+              rec.recommendationScore * contentWeight;
             existing.reason = `${existing.reason}; ${rec.reason}`;
           } else {
             allRecommendations.set(rec.item.id, {
               ...rec,
-              recommendationScore: rec.recommendationScore * weights.contentBased!,
+              recommendationScore: rec.recommendationScore * contentWeight,
             });
           }
         });
@@ -379,7 +412,7 @@ export class RecommendationService {
     // Sort by recommendation score and limit
     const recommendations = Array.from(allRecommendations.values())
       .sort((a, b) => b.recommendationScore - a.recommendationScore)
-      .slice(0, limit);
+      .slice(0, validatedLimit);
 
     // Calculate metadata
     const similarities = recommendations.map(r => r.similarity);

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
+import { EmbeddingSettings } from '../config/vectordb.settings';
 
 dotenv.config();
 
@@ -11,9 +12,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   try {
-    // Use the embedding model - text-embedding-004 is the latest stable model
-    // It produces 768-dimensional vectors
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    // Use the embedding model from settings
+    // It produces 768-dimensional vectors (from EmbeddingSettings.DIMENSION)
+    const model = genAI.getGenerativeModel({ model: EmbeddingSettings.MODEL_NAME });
     
     const result = await model.embedContent(text);
     
