@@ -250,6 +250,47 @@ export const SearchSettings = {
 } as const;
 
 /**
+ * Fuzzy Search Settings
+ * Configuration for fuzzy search (typo-tolerant search)
+ */
+export const FuzzySearchSettings = {
+  /**
+   * Default minimum fuzzy match score (0-1)
+   * Lower = more permissive (finds more results with typos)
+   * Higher = more strict (only close matches)
+   */
+  DEFAULT_MIN_SCORE: 0.3,
+
+  /**
+   * Strict fuzzy match threshold
+   * Only very close matches
+   */
+  STRICT_MIN_SCORE: 0.7,
+
+  /**
+   * Moderate fuzzy match threshold
+   * Balanced between typo tolerance and relevance
+   */
+  MODERATE_MIN_SCORE: 0.5,
+
+  /**
+   * Permissive fuzzy match threshold
+   * Very tolerant of typos
+   */
+  PERMISSIVE_MIN_SCORE: 0.2,
+
+  /**
+   * Default fields to search in
+   */
+  DEFAULT_SEARCH_FIELDS: ['title', 'description', 'content'] as const,
+
+  /**
+   * Default limit for fuzzy search results
+   */
+  DEFAULT_LIMIT: 20,
+} as const;
+
+/**
  * Database Settings
  * Configuration for database operations
  */
@@ -298,6 +339,7 @@ export const VectorDBSettings = {
   recommendations: RecommendationSettings,
   embeddings: EmbeddingSettings,
   search: SearchSettings,
+  fuzzy: FuzzySearchSettings,
   database: DatabaseSettings,
   performance: PerformanceSettings,
 } as const;

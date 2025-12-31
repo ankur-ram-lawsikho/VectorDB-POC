@@ -1,12 +1,14 @@
 import { AppDataSource } from '../config/database';
 import { MediaItem, MediaType } from '../entities/MediaItem';
 import { generateEmbedding, prepareTextForEmbedding } from '../utils/embeddings';
+import { fuzzyMatch, fuzzySimilarity } from '../utils/fuzzySearch';
 import { Repository } from 'typeorm';
 import { 
   LimitSettings, 
   DistanceSettings, 
   SimilaritySettings, 
   SemanticSearchSettings,
+  FuzzySearchSettings,
   getMaxDistance,
   validateLimit
 } from '../config/vectordb.settings';
@@ -515,11 +517,11 @@ export class MediaService {
             semanticMatch,
           };
         })
-        .sort((a, b) => (b.relevanceScore ?? b.similarity) - (a.relevanceScore ?? a.similarity));
+        .sort((a: { relevanceScore?: number; similarity: number }, b: { relevanceScore?: number; similarity: number }) => (b.relevanceScore ?? b.similarity) - (a.relevanceScore ?? a.similarity));
 
       // Calculate average similarity
       const averageSimilarity = filteredResults.length > 0
-        ? filteredResults.reduce((sum, r) => sum + r.similarity, 0) / filteredResults.length
+        ? filteredResults.reduce((sum: number, r: { similarity: number }) => sum + r.similarity, 0) / filteredResults.length
         : 0;
 
       // Extract related concepts from top results (if enabled)
@@ -540,7 +542,7 @@ export class MediaService {
         }
       } else if (effectiveMinSimilarity === 0 && filteredResults.length > 0) {
         // If we're showing results with 0 similarity threshold, warn the user
-        const avgSim = filteredResults.reduce((sum, r) => sum + r.similarity, 0) / filteredResults.length;
+        const avgSim = filteredResults.reduce((sum: number, r: { similarity: number }) => sum + r.similarity, 0) / filteredResults.length;
         if (avgSim < 0.2) {
           helpfulMessage = `Found ${filteredResults.length} results, but they have low similarity (avg: ${(avgSim * 100).toFixed(1)}%). These may not be very relevant to your query. Consider adding more related content to your database.`;
         }
@@ -688,6 +690,96 @@ export class MediaService {
       'off', 'over', 'under', 'again', 'further', 'then', 'once'
     ]);
     return stopWords.has(word.toLowerCase());
+  }
+
+  /**
+   * Fuzzy search using Levenshtein distance
+   * Finds items even with typos or partial matches
+   * 
+   * @param query - Search query (can have typos)
+   * @param limit - Maximum number of results
+   * @param minScore - Minimum fuzzy match score (0-1)
+   * @param searchFields - Fields to search in (default: all)
+   * @returns Array of search results with fuzzy match scores
+   */
+  async fuzzySearch(
+    query: string,
+    limit: number = FuzzySearchSettings.DEFAULT_LIMIT,
+    minScore: number = FuzzySearchSettings.DEFAULT_MIN_SCORE,
+    searchFields: ('title' | 'description' | 'content')[] = [...FuzzySearchSettings.DEFAULT_SEARCH_FIELDS]
+  ): Promise<Array<{
+    item: MediaItem;
+    fuzzyScore: number;
+    matchedField: string;
+    matchedText?: string;
+  }>> {
+    if (!query || query.trim() === '') {
+      return [];
+    }
+
+    const validatedLimit = validateLimit(limit);
+    const queryLower = query.toLowerCase().trim();
+
+    // Get all media items
+    const allItems = await this.mediaRepository.find();
+
+    const results: Array<{
+      item: MediaItem;
+      fuzzyScore: number;
+      matchedField: string;
+      matchedText?: string;
+    }> = [];
+
+    for (const item of allItems) {
+      let bestScore = 0;
+      let bestField = '';
+      let matchedText = '';
+
+      // Search in title
+      if (searchFields.includes('title') && item.title) {
+        const titleScore = fuzzyMatch(item.title, queryLower, minScore);
+        if (titleScore > bestScore) {
+          bestScore = titleScore;
+          bestField = 'title';
+          matchedText = item.title;
+        }
+      }
+
+      // Search in description
+      if (searchFields.includes('description') && item.description) {
+        const descScore = fuzzyMatch(item.description, queryLower, minScore);
+        if (descScore > bestScore) {
+          bestScore = descScore;
+          bestField = 'description';
+          matchedText = item.description.substring(0, 100);
+        }
+      }
+
+      // Search in content
+      if (searchFields.includes('content') && item.content) {
+        const contentScore = fuzzyMatch(item.content, queryLower, minScore);
+        if (contentScore > bestScore) {
+          bestScore = contentScore;
+          bestField = 'content';
+          matchedText = item.content.substring(0, 100);
+        }
+      }
+
+      // Add to results if score meets threshold
+      if (bestScore >= minScore) {
+        results.push({
+          item,
+          fuzzyScore: bestScore,
+          matchedField: bestField,
+          matchedText: matchedText || undefined,
+        });
+      }
+    }
+
+    // Sort by fuzzy score (descending) and limit
+    return results
+      .sort((a, b) => b.fuzzyScore - a.fuzzyScore)
+      .slice(0, validatedLimit);
   }
 }
 

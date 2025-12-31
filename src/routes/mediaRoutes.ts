@@ -8,7 +8,8 @@ import {
   SimilaritySettings, 
   SemanticSearchSettings,
   RecommendationSettings,
-  SearchSettings
+  SearchSettings,
+  FuzzySearchSettings
 } from '../config/vectordb.settings';
 import path from 'path';
 
@@ -211,6 +212,52 @@ router.post('/search/semantic', async (req: Request, res: Response) => {
       res.status(500).json({ error: 'Failed to perform semantic search', details: error.message });
     } else {
       res.status(500).json({ error: 'Failed to perform semantic search' });
+    }
+  }
+});
+
+// Fuzzy search endpoint - typo-tolerant search
+router.post('/search/fuzzy', async (req: Request, res: Response) => {
+  try {
+    const { query, limit, minScore, searchFields } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    console.log(`Fuzzy search request: query="${query}", limit=${limit || FuzzySearchSettings.DEFAULT_LIMIT}`);
+
+    const results = await mediaService.fuzzySearch(
+      query,
+      limit || FuzzySearchSettings.DEFAULT_LIMIT,
+      minScore || FuzzySearchSettings.DEFAULT_MIN_SCORE,
+      searchFields || [...FuzzySearchSettings.DEFAULT_SEARCH_FIELDS]
+    );
+    
+    res.json({
+      query,
+      count: results.length,
+      results: results.map(r => ({
+        ...r.item,
+        fuzzyScore: r.fuzzyScore,
+        matchedField: r.matchedField,
+        matchedText: r.matchedText,
+      })),
+      metadata: {
+        searchType: 'fuzzy',
+        averageScore: results.length > 0
+          ? results.reduce((sum, r) => sum + r.fuzzyScore, 0) / results.length
+          : 0,
+        minScore: results.length > 0 ? Math.min(...results.map(r => r.fuzzyScore)) : 0,
+        maxScore: results.length > 0 ? Math.max(...results.map(r => r.fuzzyScore)) : 0,
+      },
+    });
+  } catch (error) {
+    console.error('Error in fuzzy search:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ error: 'Failed to perform fuzzy search', details: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to perform fuzzy search' });
     }
   }
 });

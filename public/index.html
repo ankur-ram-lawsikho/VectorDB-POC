@@ -959,6 +959,11 @@
                                 <input type="radio" name="search-mode" value="keyword" style="width: auto; margin-right: 6px;" onchange="updateSearchMode()">
                                 <span style="font-size: 14px; font-weight: 500;">📝 Keyword</span>
                             </label>
+                            <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 14px; border-radius: 6px; background: #fce4ec; border: 2px solid #e91e63; transition: all 0.2s;"
+                                   onmouseover="this.style.background='#f8bbd0'" onmouseout="this.style.background='#fce4ec'">
+                                <input type="radio" name="search-mode" value="fuzzy" style="width: auto; margin-right: 6px;" onchange="updateSearchMode()">
+                                <span style="font-size: 14px; font-weight: 500;">🔤 Fuzzy</span>
+                            </label>
                             <button 
                                 onclick="toggleAdvancedOptions()" 
                                 style="margin-left: auto; padding: 6px 12px; font-size: 12px; background: transparent; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; color: #666; transition: all 0.2s;"
@@ -1449,6 +1454,9 @@
                     } else if (radio.value === 'similarity') {
                         label.style.background = '#fff3e0';
                         label.style.borderColor = '#ff9800';
+                    } else if (radio.value === 'fuzzy') {
+                        label.style.background = '#fce4ec';
+                        label.style.borderColor = '#e91e63';
                     } else {
                         label.style.background = '#f5f5f5';
                         label.style.borderColor = '#e0e0e0';
@@ -1479,6 +1487,12 @@
                 infoDiv.style.color = '#e65100';
                 if (semanticAdvanced) semanticAdvanced.style.display = 'none';
                 if (similarityAdvanced) similarityAdvanced.style.display = 'block';
+            } else if (searchMode === 'fuzzy') {
+                infoDiv.innerHTML = '<strong>🔤 Fuzzy Search</strong> finds items even with typos or partial matches. Great for when you\'re not sure of exact spelling.';
+                infoDiv.style.background = '#fce4ec';
+                infoDiv.style.color = '#880e4f';
+                if (semanticAdvanced) semanticAdvanced.style.display = 'none';
+                if (similarityAdvanced) similarityAdvanced.style.display = 'none';
             } else {
                 infoDiv.innerHTML = '<strong>📝 Keyword Search</strong> finds items containing your exact search terms in title, content, or description.';
                 infoDiv.style.background = '#f5f5f5';
@@ -1512,6 +1526,8 @@
                     await semanticSearch(query);
                 } else if (searchMode === 'similarity') {
                     await searchMedia();
+                } else if (searchMode === 'fuzzy') {
+                    await fuzzySearch(query);
                 } else {
                     await keywordSearch(query);
                 }
@@ -1658,6 +1674,85 @@
                     <div style="margin-top: 10px; display: flex; gap: 10px;">
                         <button style="background: #667eea; padding: 8px 16px; font-size: 14px;" onclick="viewMediaDetail('${result.item.id}')">View Details</button>
                         <button class="delete-btn" onclick="deleteMedia('${result.item.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        async function fuzzySearch(query) {
+            const container = document.getElementById('search-results');
+            try {
+                const limit = parseInt(document.getElementById('search-limit')?.value) || 20;
+                const minScore = 0.3; // Can be made configurable
+                
+                const response = await fetch(`${API_BASE}/search/fuzzy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        limit: limit,
+                        minScore: minScore
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    if (data.results && data.results.length > 0) {
+                        // Display metadata
+                        if (data.metadata) {
+                            const metadataHtml = `
+                                <div style="padding: 10px; background: #fce4ec; border-radius: 4px; margin-bottom: 15px; font-size: 12px; color: #880e4f;">
+                                    <strong>Fuzzy Search Stats:</strong> 
+                                    Found ${data.metadata.count} results 
+                                    (Avg score: ${(data.metadata.averageScore * 100).toFixed(1)}%)
+                                    | Score range: ${(data.metadata.minScore * 100).toFixed(1)}% - ${(data.metadata.maxScore * 100).toFixed(1)}%
+                                </div>
+                            `;
+                            container.innerHTML = metadataHtml;
+                        }
+                        
+                        // Display results
+                        displayFuzzyResults(data.results, 'search-results');
+                        showMessage(`Found ${data.results.length} fuzzy match(es)`, 'success');
+                    } else {
+                        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No fuzzy matches found. Try adjusting the search query or use a different search type.</div>';
+                        showMessage('No fuzzy matches found', 'error');
+                    }
+                } else {
+                    showMessage(data.error || 'Fuzzy search failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        function displayFuzzyResults(results, containerId) {
+            const container = document.getElementById(containerId);
+            const existingContent = container.innerHTML;
+            
+            container.innerHTML = existingContent + results.map(result => {
+                const fuzzyBadge = `<span style="padding: 4px 8px; background: #fce4ec; color: #880e4f; border-radius: 4px; font-size: 11px; margin-left: 8px;">Fuzzy: ${(result.fuzzyScore * 100).toFixed(1)}%</span>`;
+                
+                const matchInfo = result.matchedField 
+                    ? `<div style="margin: 8px 0; padding: 6px; background: #fff3e0; border-radius: 4px; font-size: 12px;">
+                         <strong>Matched in:</strong> ${result.matchedField} 
+                         ${result.matchedText ? `(${result.matchedText.substring(0, 50)}...)` : ''}
+                       </div>`
+                    : '';
+                
+                return `
+                <div class="media-card">
+                    <span class="media-type ${result.type}">${result.type.toUpperCase()}</span>
+                    <h3>${result.title}${fuzzyBadge}</h3>
+                    ${matchInfo}
+                    ${result.description ? `<div class="media-description">${result.description}</div>` : ''}
+                    ${result.content ? `<div class="media-content">${result.content.substring(0, 200)}${result.content.length > 200 ? '...' : ''}</div>` : ''}
+                    ${result.url ? `<a href="${result.url}" target="_blank" class="media-url">${result.url}</a>` : ''}
+                    ${result.filePath ? `<a href="${API_BASE}/file/${result.id}" target="_blank" class="media-url">View File</a>` : ''}
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <button style="background: #667eea; padding: 8px 16px; font-size: 14px;" onclick="viewMediaDetail('${result.id}')">View Details</button>
+                        <button class="delete-btn" onclick="deleteMedia('${result.id}')">Delete</button>
                     </div>
                 </div>
             `;
