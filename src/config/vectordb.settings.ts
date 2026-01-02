@@ -291,6 +291,58 @@ export const FuzzySearchSettings = {
 } as const;
 
 /**
+ * Audio/Video Matching Settings
+ * Configuration for enhanced audio and video matching
+ */
+export const MediaMatchingSettings = {
+  /**
+   * Boost score for type-specific matches (audio matching audio, video matching video)
+   * Applied as a multiplier to similarity score
+   */
+  TYPE_MATCH_BOOST: 1.15,
+
+  /**
+   * Boost score for metadata matches (format, codec, etc.)
+   */
+  METADATA_MATCH_BOOST: 1.1,
+
+  /**
+   * Boost score for transcription matches
+   */
+  TRANSCRIPTION_MATCH_BOOST: 1.2,
+
+  /**
+   * Enable enhanced metadata extraction
+   */
+  ENABLE_METADATA_EXTRACTION: true,
+
+  /**
+   * Enable transcription for audio/video
+   */
+  ENABLE_TRANSCRIPTION: false, // Set to true when transcription service is configured
+
+  /**
+   * Include metadata in embeddings
+   */
+  INCLUDE_METADATA_IN_EMBEDDINGS: true,
+
+  /**
+   * Include transcription in embeddings
+   */
+  INCLUDE_TRANSCRIPTION_IN_EMBEDDINGS: true,
+
+  /**
+   * Minimum transcription confidence to include in search
+   */
+  MIN_TRANSCRIPTION_CONFIDENCE: 0.7,
+
+  /**
+   * Keywords boost multiplier for media-specific terms
+   */
+  KEYWORDS_BOOST: 1.05,
+} as const;
+
+/**
  * Database Settings
  * Configuration for database operations
  */
@@ -340,6 +392,7 @@ export const VectorDBSettings = {
   embeddings: EmbeddingSettings,
   search: SearchSettings,
   fuzzy: FuzzySearchSettings,
+  mediaMatching: MediaMatchingSettings,
   database: DatabaseSettings,
   performance: PerformanceSettings,
 } as const;

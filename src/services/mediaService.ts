@@ -9,6 +9,7 @@ import {
   SimilaritySettings, 
   SemanticSearchSettings,
   FuzzySearchSettings,
+  MediaMatchingSettings,
   getMaxDistance,
   validateLimit
 } from '../config/vectordb.settings';
@@ -52,15 +53,16 @@ export class MediaService {
     mediaItem.url = url;
     mediaItem.mimeType = mimeType;
 
-    // Generate embedding for search using only title, description, and content
-    const textForEmbedding = prepareTextForEmbedding(
-      title,
-      description,
-      content
-    );
-    
     // Save the media item first (without embedding)
     const savedItem = await this.mediaRepository.save(mediaItem);
+    
+    // Generate embedding with enhanced support for audio/video
+    const textForEmbedding = await prepareTextForEmbedding(
+      title,
+      description,
+      content,
+      savedItem // Pass the saved item for enhanced processing
+    );
     
     // Only generate embedding if there's text to embed
     if (!textForEmbedding || textForEmbedding.trim() === '') {
@@ -293,7 +295,7 @@ export class MediaService {
       return [];
     }
 
-    // Convert results to SimilaritySearchResult format
+    // Convert results to SimilaritySearchResult format with type-aware boosting
     return results.map((row: MediaItem & { distance?: number; similarity?: number }) => {
       const item = new MediaItem();
       item.id = row.id;
@@ -308,12 +310,69 @@ export class MediaService {
       item.createdAt = row.createdAt;
       item.updatedAt = row.updatedAt;
       
+      let similarity = row.similarity ?? (1 - (row.distance ?? 0));
+      
+      // Apply type-aware boosting for audio/video (no query in this context)
+      similarity = this.applyTypeAwareBoosting(item, '', similarity);
+      
       return {
         item,
-        similarity: row.similarity ?? (1 - (row.distance ?? 0)),
+        similarity,
         distance: row.distance ?? 0,
       };
     });
+  }
+
+  /**
+   * Apply type-aware boosting for audio/video items
+   * Boosts similarity scores when query matches media type or metadata
+   */
+  private applyTypeAwareBoosting(
+    item: MediaItem,
+    query: string,
+    baseSimilarity: number
+  ): number {
+    let boostedSimilarity = baseSimilarity;
+    const queryLower = query.toLowerCase();
+
+    // Type-specific boosting
+    if (item.type === MediaType.AUDIO || item.type === MediaType.VIDEO) {
+      // Boost if query mentions the media type
+      if (queryLower.includes(item.type)) {
+        boostedSimilarity *= MediaMatchingSettings.TYPE_MATCH_BOOST;
+      }
+
+      // Boost for format/codec matches
+      if (item.mimeType) {
+        const format = item.mimeType.split('/')[1]?.toLowerCase();
+        if (format && queryLower.includes(format)) {
+          boostedSimilarity *= MediaMatchingSettings.METADATA_MATCH_BOOST;
+        }
+      }
+
+      // Boost for media-specific keywords
+      const mediaKeywords = item.type === MediaType.AUDIO 
+        ? ['audio', 'sound', 'recording', 'podcast', 'music', 'song']
+        : ['video', 'movie', 'clip', 'film', 'recording', 'stream'];
+      
+      const hasMediaKeyword = mediaKeywords.some(keyword => queryLower.includes(keyword));
+      if (hasMediaKeyword) {
+        boostedSimilarity *= MediaMatchingSettings.KEYWORDS_BOOST;
+      }
+
+      // Boost for transcription matches (if transcription is in content)
+      if (item.content && item.content.toLowerCase().includes('transcription:')) {
+        const transcriptionText = item.content.toLowerCase();
+        const queryWords = queryLower.split(' ').filter(w => w.length > 3);
+        const matchingWords = queryWords.filter(word => transcriptionText.includes(word));
+        if (matchingWords.length > 0) {
+          boostedSimilarity *= MediaMatchingSettings.TRANSCRIPTION_MATCH_BOOST;
+        }
+      }
+    }
+
+    // Cap at 1.0
+    return Math.min(1.0, boostedSimilarity);
   }
 
   async getAllMedia(): Promise<MediaItem[]> {
@@ -501,7 +560,11 @@ export class MediaService {
           item.updatedAt = row.updatedAt;
           
           // Calculate relevance score (enhanced similarity with context)
-          const baseSimilarity = row.similarity ?? (1 - (row.distance ?? 0));
+          let baseSimilarity = row.similarity ?? (1 - (row.distance ?? 0));
+          
+          // Apply type-aware boosting
+          baseSimilarity = this.applyTypeAwareBoosting(item, query, baseSimilarity);
+          
           const relevanceScore = contextBoost 
             ? this.calculateRelevanceScore(item, query, baseSimilarity)
             : baseSimilarity;

@@ -23,11 +23,12 @@ async function backfillEmbeddings() {
       try {
         console.log(`Processing: ${item.title}`);
         
-        // Generate embedding using only title, description, and content
-        const textForEmbedding = prepareTextForEmbedding(
+        // Generate embedding with enhanced support for audio/video
+        const textForEmbedding = await prepareTextForEmbedding(
           item.title,
           item.description || undefined,
-          item.content || undefined
+          item.content || undefined,
+          item // Pass item for enhanced audio/video processing
         );
         
         // Skip if no relevant field
