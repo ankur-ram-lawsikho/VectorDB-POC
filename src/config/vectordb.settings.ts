@@ -340,6 +340,56 @@ export const MediaMatchingSettings = {
    * Keywords boost multiplier for media-specific terms
    */
   KEYWORDS_BOOST: 1.05,
+
+  /**
+   * Platform-specific boost (YouTube, Vimeo, etc.)
+   */
+  PLATFORM_MATCH_BOOST: 1.12,
+
+  /**
+   * Title field match boost (stronger than description)
+   */
+  TITLE_MATCH_BOOST: 1.18,
+
+  /**
+   * Description field match boost
+   */
+  DESCRIPTION_MATCH_BOOST: 1.08,
+
+  /**
+   * Query intent match boost (tutorial, review, music, etc.)
+   */
+  INTENT_MATCH_BOOST: 1.14,
+
+  /**
+   * Phrase match boost (exact phrase in transcription)
+   */
+  PHRASE_MATCH_BOOST: 1.25,
+
+  /**
+   * Recency boost multiplier (newer content gets slight boost)
+   * Applied based on days since creation (decays over time)
+   */
+  RECENCY_BOOST_ENABLED: true,
+  RECENCY_BOOST_MAX_DAYS: 30, // Boost applies to content within 30 days
+  RECENCY_BOOST_MULTIPLIER: 1.03, // 3% boost for very recent content
+
+  /**
+   * Use additive boosts instead of multiplicative (more controlled)
+   * When true, boosts are added to similarity score instead of multiplied
+   */
+  USE_ADDITIVE_BOOSTS: false,
+
+  /**
+   * Maximum total boost (cap to prevent over-boosting)
+   */
+  MAX_TOTAL_BOOST: 1.5, // 50% maximum boost
+
+  /**
+   * Minimum base similarity to apply boosting
+   * Prevents boosting very low-quality matches
+   */
+  MIN_SIMILARITY_FOR_BOOST: 0.1,
 } as const;
 
 /**
